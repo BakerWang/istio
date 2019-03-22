@@ -4,16 +4,26 @@ metadata:
   name: istio-ingress
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "istio.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    app: {{ template "ingress.name" . }}
+    chart: {{ template "ingress.chart" . }}
     heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
     istio: ingress
 spec:
+{{- if not .Values.autoscaleEnabled }}
+{{- if .Values.replicaCount }}
   replicas: {{ .Values.replicaCount }}
+{{- else }}
+  replicas: 1
+{{- end }}
+{{- end }}
   template:
     metadata:
       labels:
+        app: {{ template "ingress.name" . }}
+        chart: {{ template "ingress.chart" . }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
         istio: ingress
       annotations:
         sidecar.istio.io/inject: "false"
@@ -25,7 +35,7 @@ spec:
 {{- end }}
       containers:
         - name: {{ template "istio.name" . }}
-          image: "{{ .Values.global.hub }}/proxyv2:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image }}:{{ .Values.global.tag }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:
             - containerPort: 80
@@ -33,10 +43,10 @@ spec:
           args:
           - proxy
           - ingress
-          - -v
-          - "2"
-          - --discoveryRefreshDelay
-          - '1s' #discoveryRefreshDelay
+          - --domain
+          - $(POD_NAMESPACE).svc.{{ .Values.global.proxy.clusterDomain }}
+          - --log_output_level
+          - 'info'
           - --drainDuration
           - '45s' #drainDuration
           - --parentShutdownDuration
@@ -46,24 +56,43 @@ spec:
           - --serviceCluster
           - istio-ingress
           - --zipkinAddress
-          - zipkin:9411
+        {{- if .Values.global.tracer.zipkin.address }}
+          - {{ .Values.global.tracer.zipkin.address }}
+        {{- else }}
+          - zipkin.{{ .Release.Namespace }}:9411
+        {{- end }}
         {{- if .Values.global.proxy.envoyStatsd.enabled }}
           - --statsdUdpAddress
           - {{ .Values.global.proxy.envoyStatsd.host }}:{{ .Values.global.proxy.envoyStatsd.port }}
         {{- end }}
           - --proxyAdminPort
           - "15000"
+          - --statusPort
+          - "15020"
         {{- if .Values.global.controlPlaneSecurityEnabled }}
           - --controlPlaneAuthPolicy
           - MUTUAL_TLS
           - --discoveryAddress
-          - istio-pilot:15005
+          - istio-pilot:15011
         {{- else }}
           - --controlPlaneAuthPolicy
           - NONE
           - --discoveryAddress
-          - istio-pilot:8080
+          - istio-pilot:15010
         {{- end }}
+        {{- if .Values.global.trustDomain }}
+          - --trust-domain={{ .Values.global.trustDomain }}
+        {{- end }}
+          readinessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /healthz/ready
+              port: 15020
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            successThreshold: 1
+            timeoutSeconds: 1
           resources:
 {{- if .Values.resources }}
 {{ toYaml .Values.resources | indent 12 }}
@@ -71,6 +100,11 @@ spec:
 {{ toYaml .Values.global.defaultResources | indent 12 }}
 {{- end }}
           env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
           - name: POD_NAME
             valueFrom:
               fieldRef:

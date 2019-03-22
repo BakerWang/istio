@@ -22,20 +22,17 @@ import (
 	"strings"
 	"testing"
 
-	"istio.io/istio/mixer/pkg/config/crd"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	multierror "github.com/hashicorp/go-multierror"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	cpb "istio.io/api/policy/v1beta1"
 	adapter2 "istio.io/istio/mixer/adapter"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/mixer/pkg/config"
+	"istio.io/istio/mixer/pkg/config/crd"
 	"istio.io/istio/mixer/pkg/config/store"
-	"istio.io/istio/mixer/pkg/lang/checker"
 	"istio.io/istio/mixer/pkg/template"
 	template2 "istio.io/istio/mixer/template"
 )
@@ -84,11 +81,10 @@ func getValidatorForTest() (*Validator, error) {
 		return nil, err
 	}
 	groupVersion := &schema.GroupVersion{Group: crd.ConfigAPIGroup, Version: crd.ConfigAPIVersion}
-	s, err := store.NewRegistry(config.StoreInventory()...).NewStore("fs://"+path, groupVersion)
+	s, err := store.NewRegistry(config.StoreInventory()...).NewStore("fs://"+path, groupVersion, nil, []string{})
 	if err != nil {
 		return nil, err
 	}
-	tc := checker.NewTypeChecker()
 	adapterInfo := make(map[string]*adapter.Info)
 	for _, y := range adapter2.Inventory() {
 		i := y()
@@ -132,7 +128,7 @@ func getValidatorForTest() (*Validator, error) {
 		},
 	}
 
-	v, err := NewValidator(tc, s, adapterInfo, templateInfo)
+	v, err := NewValidator(s, adapterInfo, templateInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +160,7 @@ func TestValidator(t *testing.T) {
 			"new rule",
 			[]*store.Event{updateEvent("test.rule.default", &cpb.Rule{
 				Actions: []*cpb.Action{
-					{Handler: "staticversion.listchecker.istio-system", Instances: []string{"appversion.listentry.istio-system"}},
+					{Handler: "staticversion.handler.istio-system", Instances: []string{"appversion.listentry.istio-system"}},
 				}})},
 			true,
 			"",
@@ -174,7 +170,7 @@ func TestValidator(t *testing.T) {
 			"update rule",
 			[]*store.Event{updateEvent("checkwl.rule.istio-system", &cpb.Rule{
 				Actions: []*cpb.Action{
-					{Handler: "staticversion.listchecker", Instances: []string{"appversion.listentry"}},
+					{Handler: "staticversion.handler", Instances: []string{"appversion.listentry"}},
 				}})},
 			true,
 			"",
@@ -248,9 +244,9 @@ func TestValidator(t *testing.T) {
 		},
 		{
 			"invalid delete handler",
-			[]*store.Event{deleteEvent("staticversion.listchecker.istio-system")},
+			[]*store.Event{deleteEvent("staticversion.handler.istio-system")},
 			false,
-			"action='checkwl.rule.istio-system[0]': Handler not found: handler='staticversion.listchecker'",
+			"action='checkwl.rule.istio-system[0]': Handler not found: handler='staticversion'",
 		},
 		{
 			"invalid delete instance",
@@ -290,7 +286,7 @@ func TestValidator(t *testing.T) {
 }
 
 func TestValidatorToRememberValidation(t *testing.T) {
-	t.SkipNow()
+	t.Skip("https://github.com/istio/istio/issues/7696")
 	for _, c := range []struct {
 		title string
 		ev1   *store.Event

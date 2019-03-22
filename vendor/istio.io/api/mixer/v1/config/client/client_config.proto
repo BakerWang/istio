@@ -22,7 +22,7 @@ import "mixer/v1/config/client/api_spec.proto";
 import "mixer/v1/config/client/quota.proto";
 
 // $title: Mixer Client
-// $description: Configuration state for the Mixer client library
+// $description: Configuration state for the Mixer client library.
 
 package istio.mixer.v1.config.client;
 
@@ -46,6 +46,16 @@ message NetworkFailPolicy {
 
   // Specifies the behavior when the client is unable to connect to Mixer.
   FailPolicy policy = 1;
+
+  // Max retries on transport error.
+  uint32 max_retry = 2;
+
+  // Base time to wait between retries.  Will be adjusted by exponential
+  // backoff and jitter.
+  google.protobuf.Duration base_retry_wait = 3;
+
+  // Max time to wait between retries.
+  google.protobuf.Duration max_retry_wait = 4;
 }
 
 // Defines the per-service client configuration.

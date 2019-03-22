@@ -1,4 +1,4 @@
-// Copyright 2017 the Istio Authors.
+// Copyright 2017 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -135,8 +136,12 @@ func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, 
 			ctx := context.Background()
 			var sinkErr error
 			// first try to CreateSink, if error is AlreadyExists then update that sink.
-			if _, sinkErr = syncClient.CreateSink(ctx, sink); isAlreadyExists(sinkErr) {
-				_, sinkErr = syncClient.UpdateSink(ctx, sink)
+			if _, sinkErr = syncClient.CreateSinkOpt(ctx, sink,
+				logadmin.SinkOptions{UniqueWriterIdentity: log.SinkInfo.UniqueWriterIdentity}); isAlreadyExists(sinkErr) {
+				_, sinkErr = syncClient.UpdateSinkOpt(ctx, sink,
+					logadmin.SinkOptions{UpdateDestination: log.SinkInfo.UpdateDestination,
+						UpdateFilter:          log.SinkInfo.UpdateFilter,
+						UpdateIncludeChildren: log.SinkInfo.UpdateIncludeChildren})
 			}
 			if sinkErr != nil {
 				logger.Warningf("failed to create/update stackdriver logging sink: %v", sinkErr)
@@ -216,6 +221,8 @@ func toLabelMap(names []string, variables map[string]interface{}) map[string]str
 		switch vt := v.(type) {
 		case string:
 			out[name] = vt
+		case []byte:
+			out[name] = net.IP(vt).String()
 		default:
 			out[name] = fmt.Sprintf("%v", vt)
 		}
@@ -271,8 +278,8 @@ func toReq(mapping *config.Params_LogInfo_HttpRequestMapping, variables map[stri
 		req.Latency = latency
 	}
 
-	req.LocalIP = fmt.Sprintf("%v", variables[mapping.LocalIp])
-	req.RemoteIP = fmt.Sprintf("%v", variables[mapping.RemoteIp])
+	req.LocalIP = adapter.Stringify(variables[mapping.LocalIp])
+	req.RemoteIP = adapter.Stringify(variables[mapping.RemoteIp])
 	return req
 }
 

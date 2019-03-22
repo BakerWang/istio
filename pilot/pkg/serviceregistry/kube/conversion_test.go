@@ -15,26 +15,31 @@
 package kube
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"time"
-
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/spiffe"
 )
 
 var (
 	domainSuffix = "company.com"
+)
 
-	protocols = []struct {
+func TestConvertProtocol(t *testing.T) {
+	type protocolCase struct {
 		name  string
 		proto v1.Protocol
 		out   model.Protocol
-	}{
+	}
+	protocols := []protocolCase{
 		{"", v1.ProtocolTCP, model.ProtocolTCP},
 		{"http", v1.ProtocolTCP, model.ProtocolHTTP},
 		{"http-test", v1.ProtocolTCP, model.ProtocolHTTP},
@@ -46,19 +51,64 @@ var (
 		{"http2-test", v1.ProtocolTCP, model.ProtocolHTTP2},
 		{"grpc", v1.ProtocolTCP, model.ProtocolGRPC},
 		{"grpc-test", v1.ProtocolTCP, model.ProtocolGRPC},
+		{"grpc-web", v1.ProtocolTCP, model.ProtocolGRPCWeb},
+		{"grpc-web-test", v1.ProtocolTCP, model.ProtocolGRPCWeb},
 		{"mongo", v1.ProtocolTCP, model.ProtocolMongo},
 		{"mongo-test", v1.ProtocolTCP, model.ProtocolMongo},
 		{"redis", v1.ProtocolTCP, model.ProtocolRedis},
 		{"redis-test", v1.ProtocolTCP, model.ProtocolRedis},
+		{"mysql", v1.ProtocolTCP, model.ProtocolMySQL},
+		{"mysql-test", v1.ProtocolTCP, model.ProtocolMySQL},
 	}
-)
 
-func TestConvertProtocol(t *testing.T) {
-	for _, tt := range protocols {
-		out := ConvertProtocol(tt.name, tt.proto)
-		if out != tt.out {
-			t.Errorf("convertProtocol(%q, %q) => %q, want %q", tt.name, tt.proto, out, tt.out)
+	// Create the list of cases for all of the names in both upper and lowercase.
+	cases := make([]protocolCase, 0, len(protocols)*2)
+	for _, p := range protocols {
+		name := p.name
+
+		p.name = strings.ToLower(name)
+		cases = append(cases, p)
+
+		// Don't bother adding uppercase version for empty string.
+		if name != "" {
+			p.name = strings.ToUpper(name)
+			cases = append(cases, p)
 		}
+	}
+
+	for _, c := range cases {
+		testName := strings.Replace(fmt.Sprintf("%s_%s", c.name, c.proto), "-", "_", -1)
+		t.Run(testName, func(t *testing.T) {
+			out := ConvertProtocol(c.name, c.proto)
+			if out != c.out {
+				t.Errorf("convertProtocol(%q, %q) => %q, want %q", c.name, c.proto, out, c.out)
+			}
+		})
+	}
+}
+
+func BenchmarkConvertProtocol(b *testing.B) {
+	cases := []struct {
+		name  string
+		proto v1.Protocol
+		out   model.Protocol
+	}{
+		{"grpc-web-lowercase", v1.ProtocolTCP, model.ProtocolGRPCWeb},
+		{"GRPC-WEB-mixedcase", v1.ProtocolTCP, model.ProtocolGRPCWeb},
+		{"https-lowercase", v1.ProtocolTCP, model.ProtocolHTTPS},
+		{"HTTPS-mixedcase", v1.ProtocolTCP, model.ProtocolHTTPS},
+	}
+
+	for _, c := range cases {
+		testName := strings.Replace(c.name, "-", "_", -1)
+		b.Run(testName, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				out := ConvertProtocol(c.name, c.proto)
+				if out != c.out {
+					b.Fatalf("convertProtocol(%q, %q) => %q, want %q", c.name, c.proto, out, c.out)
+				}
+			}
+		})
 	}
 }
 
@@ -67,8 +117,12 @@ func TestServiceConversion(t *testing.T) {
 	namespace := "default"
 	saA := "serviceaccountA"
 	saB := "serviceaccountB"
-	saC := "serviceaccountC@cloudservices.gserviceaccount.com"
-	saD := "serviceaccountD@developer.gserviceaccount.com"
+	saC := "spiffe://accounts.google.com/serviceaccountC@cloudservices.gserviceaccount.com"
+	saD := "spiffe://accounts.google.com/serviceaccountD@developer.gserviceaccount.com"
+
+	oldTrustDomain := spiffe.GetTrustDomain()
+	spiffe.SetTrustDomain(domainSuffix)
+	defer spiffe.SetTrustDomain(oldTrustDomain)
 
 	ip := "10.0.0.1"
 
@@ -78,9 +132,9 @@ func TestServiceConversion(t *testing.T) {
 			Name:      serviceName,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				KubeServiceAccountsOnVMAnnotation:      saA + "," + saB,
-				CanonicalServiceAccountsOnVMAnnotation: saC + "," + saD,
-				"other/annotation":                     "test",
+				KubeServiceAccountsOnVMAnnotation:  saA + "," + saB,
+				CanonicalServiceAccountsAnnotation: saC + "," + saD,
+				"other/annotation":                 "test",
 			},
 			CreationTimestamp: metav1.Time{tnow},
 		},
@@ -133,10 +187,9 @@ func TestServiceConversion(t *testing.T) {
 		t.Errorf("number of service accounts is incorrect")
 	}
 	expected := []string{
+		saC, saD,
 		"spiffe://company.com/ns/default/sa/" + saA,
 		"spiffe://company.com/ns/default/sa/" + saB,
-		"spiffe://" + saC,
-		"spiffe://" + saD,
 	}
 	if !reflect.DeepEqual(sa, expected) {
 		t.Errorf("Unexpected service accounts %v (expecting %v)", sa, expected)
@@ -215,13 +268,57 @@ func TestExternalServiceConversion(t *testing.T) {
 			len(service.Ports), len(extSvc.Spec.Ports))
 	}
 
-	if service.ExternalName != model.Hostname(extSvc.Spec.ExternalName) || !service.External() {
+	if !service.External() {
 		t.Error("service should be external")
 	}
 
 	if service.Hostname != serviceHostname(serviceName, namespace, domainSuffix) {
 		t.Errorf("service hostname incorrect => %q, want %q",
-			service.Hostname, extSvc.Spec.ExternalName)
+			service.Hostname, serviceHostname(serviceName, namespace, domainSuffix))
+	}
+}
+
+func TestExternalClusterLocalServiceConversion(t *testing.T) {
+	serviceName := "service1"
+	namespace := "default"
+
+	extSvc := v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
+				{
+					Name:     "http",
+					Port:     80,
+					Protocol: v1.ProtocolTCP,
+				},
+			},
+			Type:         v1.ServiceTypeExternalName,
+			ExternalName: "some.test.svc.cluster.local",
+		},
+	}
+
+	domainSuffix := "cluster.local"
+
+	service := convertService(extSvc, domainSuffix)
+	if service == nil {
+		t.Errorf("could not convert external service")
+	}
+
+	if len(service.Ports) != len(extSvc.Spec.Ports) {
+		t.Errorf("incorrect number of ports => %v, want %v",
+			len(service.Ports), len(extSvc.Spec.Ports))
+	}
+
+	if !service.External() {
+		t.Error("ExternalName service (even if .cluster.local) should be external")
+	}
+
+	if service.Hostname != serviceHostname(serviceName, namespace, domainSuffix) {
+		t.Errorf("service hostname incorrect => %q, want %q",
+			service.Hostname, serviceHostname(serviceName, namespace, domainSuffix))
 	}
 }
 
@@ -310,4 +407,44 @@ func TestProbesToPortsConversion(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestSecureNamingSANCustomIdentity(t *testing.T) {
+
+	pod := &v1.Pod{}
+
+	identity := "foo"
+
+	pod.Annotations = make(map[string]string)
+	pod.Annotations[IdentityPodAnnotation] = identity
+
+	san := secureNamingSAN(pod)
+
+	expectedSAN := fmt.Sprintf("spiffe://%v/%v", spiffe.GetTrustDomain(), identity)
+
+	if san != expectedSAN {
+		t.Errorf("SAN match failed, SAN:%v  expectedSAN:%v", san, expectedSAN)
+	}
+
+}
+
+func TestSecureNamingSAN(t *testing.T) {
+
+	pod := &v1.Pod{}
+
+	pod.Annotations = make(map[string]string)
+
+	ns := "anything"
+	sa := "foo"
+	pod.Namespace = ns
+	pod.Spec.ServiceAccountName = sa
+
+	san := secureNamingSAN(pod)
+
+	expectedSAN := fmt.Sprintf("spiffe://%v/ns/%v/sa/%v", spiffe.GetTrustDomain(), ns, sa)
+
+	if san != expectedSAN {
+		t.Errorf("SAN match failed, SAN:%v  expectedSAN:%v", san, expectedSAN)
+	}
+
 }

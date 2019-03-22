@@ -42,20 +42,21 @@ spec:
   ports:
   - port: 8080
     name: http-echo
-  - port: 8081
-    targetPort: 8080
-    name: http-echo1
   - port: 8079
     name: grpc-ping
   selector:
     app: fortiotls
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fortiotls
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: fortiotls
+      version: tls
   template:
     metadata:
       annotations:

@@ -18,25 +18,39 @@ var _ = math.Inf
 type Server_TLSOptions_TLSmode int32
 
 const (
-	// Forward the connection to the upstream server selected based on
-	// the SNI string presented by the client.
+	// The SNI string presented by the client will be used as the match
+	// criterion in a VirtualService TLS route to determine the
+	// destination service from the service registry.
 	Server_TLSOptions_PASSTHROUGH Server_TLSOptions_TLSmode = 0
 	// Secure connections with standard TLS semantics.
 	Server_TLSOptions_SIMPLE Server_TLSOptions_TLSmode = 1
 	// Secure connections to the upstream using mutual TLS by presenting
 	// client certificates for authentication.
 	Server_TLSOptions_MUTUAL Server_TLSOptions_TLSmode = 2
+	// Similar to the passthrough mode, except servers with this TLS mode
+	// do not require an associated VirtualService to map from the SNI
+	// value to service in the registry. The destination details such as
+	// the service/subset/port are encoded in the SNI value. The proxy
+	// will forward to the upstream (Envoy) cluster (a group of
+	// endpoints) specified by the SNI value. This server is typically
+	// used to provide connectivity between services in disparate L3
+	// networks that otherwise do not have direct connectivity between
+	// their respective endpoints. Use of this mode assumes that both the
+	// source and the destination are using Istio mTLS to secure traffic.
+	Server_TLSOptions_AUTO_PASSTHROUGH Server_TLSOptions_TLSmode = 3
 )
 
 var Server_TLSOptions_TLSmode_name = map[int32]string{
 	0: "PASSTHROUGH",
 	1: "SIMPLE",
 	2: "MUTUAL",
+	3: "AUTO_PASSTHROUGH",
 }
 var Server_TLSOptions_TLSmode_value = map[string]int32{
-	"PASSTHROUGH": 0,
-	"SIMPLE":      1,
-	"MUTUAL":      2,
+	"PASSTHROUGH":      0,
+	"SIMPLE":           1,
+	"MUTUAL":           2,
+	"AUTO_PASSTHROUGH": 3,
 }
 
 func (x Server_TLSOptions_TLSmode) String() string {
@@ -44,6 +58,44 @@ func (x Server_TLSOptions_TLSmode) String() string {
 }
 func (Server_TLSOptions_TLSmode) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptorGateway, []int{1, 0, 0}
+}
+
+// TLS protocol versions.
+type Server_TLSOptions_TLSProtocol int32
+
+const (
+	// Automatically choose the optimal TLS version.
+	Server_TLSOptions_TLS_AUTO Server_TLSOptions_TLSProtocol = 0
+	// TLS version 1.0
+	Server_TLSOptions_TLSV1_0 Server_TLSOptions_TLSProtocol = 1
+	// TLS version 1.1
+	Server_TLSOptions_TLSV1_1 Server_TLSOptions_TLSProtocol = 2
+	// TLS version 1.2
+	Server_TLSOptions_TLSV1_2 Server_TLSOptions_TLSProtocol = 3
+	// TLS version 1.3
+	Server_TLSOptions_TLSV1_3 Server_TLSOptions_TLSProtocol = 4
+)
+
+var Server_TLSOptions_TLSProtocol_name = map[int32]string{
+	0: "TLS_AUTO",
+	1: "TLSV1_0",
+	2: "TLSV1_1",
+	3: "TLSV1_2",
+	4: "TLSV1_3",
+}
+var Server_TLSOptions_TLSProtocol_value = map[string]int32{
+	"TLS_AUTO": 0,
+	"TLSV1_0":  1,
+	"TLSV1_1":  2,
+	"TLSV1_2":  3,
+	"TLSV1_3":  4,
+}
+
+func (x Server_TLSOptions_TLSProtocol) String() string {
+	return proto.EnumName(Server_TLSOptions_TLSProtocol_name, int32(x))
+}
+func (Server_TLSOptions_TLSProtocol) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorGateway, []int{1, 0, 1}
 }
 
 // `Gateway` describes a load balancer operating at the edge of the mesh
@@ -64,9 +116,10 @@ func (Server_TLSOptions_TLSmode) EnumDescriptor() ([]byte, []int) {
 // kind: Gateway
 // metadata:
 //   name: my-gateway
+//   namespace: some-config-namespace
 // spec:
 //   selector:
-//     app: my-gatweway-controller
+//     app: my-gateway-controller
 //   servers:
 //   - port:
 //       number: 80
@@ -121,13 +174,14 @@ func (Server_TLSOptions_TLSmode) EnumDescriptor() ([]byte, []int) {
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-rule
+//   namespace: bookinfo-namespace
 // spec:
 //   hosts:
 //   - reviews.prod.svc.cluster.local
 //   - uk.bookinfo.com
 //   - eu.bookinfo.com
 //   gateways:
-//   - my-gateway
+//   - some-config-namespace/my-gateway
 //   - mesh # applies to all the sidecars in the mesh
 //   http:
 //   - match:
@@ -163,11 +217,13 @@ func (Server_TLSOptions_TLSmode) EnumDescriptor() ([]byte, []int) {
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-Mongo
+//   namespace: bookinfo-namespace
 // spec:
 //   hosts:
 //   - mongosvr.prod.svc.cluster.local #name of internal Mongo service
 //   gateways:
-//   - my-gateway
+//   - some-config-namespace/my-gateway # can omit the namespace if gateway is in same
+//                                        namespace as virtual service.
 //   tcp:
 //   - match:
 //     - port: 27017
@@ -181,10 +237,10 @@ type Gateway struct {
 	// REQUIRED: A list of server specifications.
 	Servers []*Server `protobuf:"bytes,1,rep,name=servers" json:"servers,omitempty"`
 	// REQUIRED: One or more labels that indicate a specific set of pods/VMs
-	// on which this gateway configuration should be applied.
-	// The scope of label search is platform dependent.
-	// On Kubernetes, for example, the scope includes pods running in
-	// all reachable namespaces.
+	// on which this gateway configuration should be applied. The scope of
+	// label search is restricted to the configuration namespace in which the
+	// the resource is present. In other words, the Gateway resource must
+	// reside in the same namespace as the gateway workload.
 	Selector map[string]string `protobuf:"bytes,2,rep,name=selector" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -270,8 +326,14 @@ func (m *Gateway) GetSelector() map[string]string {
 // ```
 type Server struct {
 	// REQUIRED: The Port on which the proxy should listen for incoming
-	// connections
+	// connections. If using unix domain socket, use 0 as the port number,
+	// with a valid protocol and port name, along with the bind parameter.
 	Port *Port `protobuf:"bytes,1,opt,name=port" json:"port,omitempty"`
+	// $hide_from_docs
+	// The ip or the unix domain socket to which the listener should be bound
+	// to. Format: x.x.x.x or unix:///path/to/uds or unix://@foobar (Linux
+	// abstract namespace).
+	Bind string `protobuf:"bytes,4,opt,name=bind,proto3" json:"bind,omitempty"`
 	// REQUIRED. A list of hosts exposed by this gateway. At least one
 	// host is required. While typically applicable to
 	// HTTP services, it can also be used for TCP services using TLS with
@@ -291,6 +353,10 @@ type Server struct {
 	// these options to control if all http requests should be redirected to
 	// https, and the TLS modes to use.
 	Tls *Server_TLSOptions `protobuf:"bytes,3,opt,name=tls" json:"tls,omitempty"`
+	// The loopback IP endpoint or unix domain socket to which traffic should
+	// be forwarded to by default. Format should be 127.0.0.1:PORT or
+	// unix:///path/to/socket or unix://@foobar (Linux abstract namespace).
+	DefaultEndpoint string `protobuf:"bytes,5,opt,name=default_endpoint,json=defaultEndpoint,proto3" json:"default_endpoint,omitempty"`
 }
 
 func (m *Server) Reset()                    { *m = Server{} }
@@ -305,6 +371,13 @@ func (m *Server) GetPort() *Port {
 	return nil
 }
 
+func (m *Server) GetBind() string {
+	if m != nil {
+		return m.Bind
+	}
+	return ""
+}
+
 func (m *Server) GetHosts() []string {
 	if m != nil {
 		return m.Hosts
@@ -317,6 +390,13 @@ func (m *Server) GetTls() *Server_TLSOptions {
 		return m.Tls
 	}
 	return nil
+}
+
+func (m *Server) GetDefaultEndpoint() string {
+	if m != nil {
+		return m.DefaultEndpoint
+	}
+	return ""
 }
 
 type Server_TLSOptions struct {
@@ -337,9 +417,30 @@ type Server_TLSOptions struct {
 	// certificate authority certificates to use in verifying a presented
 	// client side certificate.
 	CaCertificates string `protobuf:"bytes,5,opt,name=ca_certificates,json=caCertificates,proto3" json:"ca_certificates,omitempty"`
+	// The credentialName stands for a unique identifier that can be used
+	// to identify the serverCertificate and the privateKey. The credentialName
+	// appended with suffix "-cacert" is used to identify the CaCertificates
+	// associated with this server. Gateway workloads capable of fetching
+	// credentials from a remote credential store will be configured to retrieve
+	// the serverCertificate and the privateKey using credentialName, instead of
+	// using the file system paths specified above. If using mutual TLS,
+	// gateway workloads will retrieve the CaCertificates using
+	// credentialName-cacert. The semantics of the name are platform dependent.
+	// In Kubernetes, the default Istio supplied credential server expects the
+	// credentialName to match the name of the Kubernetes secret that holds the
+	// server certificate, the private key, and the CA certificate
+	// (if using mutual TLS).
+	CredentialName string `protobuf:"bytes,10,opt,name=credential_name,json=credentialName,proto3" json:"credential_name,omitempty"`
 	// A list of alternate names to verify the subject identity in the
 	// certificate presented by the client.
 	SubjectAltNames []string `protobuf:"bytes,6,rep,name=subject_alt_names,json=subjectAltNames" json:"subject_alt_names,omitempty"`
+	// Optional: Minimum TLS protocol version.
+	MinProtocolVersion Server_TLSOptions_TLSProtocol `protobuf:"varint,7,opt,name=min_protocol_version,json=minProtocolVersion,proto3,enum=istio.networking.v1alpha3.Server_TLSOptions_TLSProtocol" json:"min_protocol_version,omitempty"`
+	// Optional: Maximum TLS protocol version.
+	MaxProtocolVersion Server_TLSOptions_TLSProtocol `protobuf:"varint,8,opt,name=max_protocol_version,json=maxProtocolVersion,proto3,enum=istio.networking.v1alpha3.Server_TLSOptions_TLSProtocol" json:"max_protocol_version,omitempty"`
+	// Optional: If specified, only support the specified cipher list.
+	// Otherwise default to the default cipher list supported by Envoy.
+	CipherSuites []string `protobuf:"bytes,9,rep,name=cipher_suites,json=cipherSuites" json:"cipher_suites,omitempty"`
 }
 
 func (m *Server_TLSOptions) Reset()                    { *m = Server_TLSOptions{} }
@@ -382,9 +483,37 @@ func (m *Server_TLSOptions) GetCaCertificates() string {
 	return ""
 }
 
+func (m *Server_TLSOptions) GetCredentialName() string {
+	if m != nil {
+		return m.CredentialName
+	}
+	return ""
+}
+
 func (m *Server_TLSOptions) GetSubjectAltNames() []string {
 	if m != nil {
 		return m.SubjectAltNames
+	}
+	return nil
+}
+
+func (m *Server_TLSOptions) GetMinProtocolVersion() Server_TLSOptions_TLSProtocol {
+	if m != nil {
+		return m.MinProtocolVersion
+	}
+	return Server_TLSOptions_TLS_AUTO
+}
+
+func (m *Server_TLSOptions) GetMaxProtocolVersion() Server_TLSOptions_TLSProtocol {
+	if m != nil {
+		return m.MaxProtocolVersion
+	}
+	return Server_TLSOptions_TLS_AUTO
+}
+
+func (m *Server_TLSOptions) GetCipherSuites() []string {
+	if m != nil {
+		return m.CipherSuites
 	}
 	return nil
 }
@@ -395,7 +524,8 @@ type Port struct {
 	Number uint32 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
 	// REQUIRED: The protocol exposed on the port.
 	// MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
-	// TLS is used to indicate secure connections to non HTTP services.
+	// TLS implies the connection will be routed based on the SNI header to
+	// the destination without terminating the TLS connection.
 	Protocol string `protobuf:"bytes,2,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	// Label assigned to the port.
 	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
@@ -433,6 +563,7 @@ func init() {
 	proto.RegisterType((*Server_TLSOptions)(nil), "istio.networking.v1alpha3.Server.TLSOptions")
 	proto.RegisterType((*Port)(nil), "istio.networking.v1alpha3.Port")
 	proto.RegisterEnum("istio.networking.v1alpha3.Server_TLSOptions_TLSmode", Server_TLSOptions_TLSmode_name, Server_TLSOptions_TLSmode_value)
+	proto.RegisterEnum("istio.networking.v1alpha3.Server_TLSOptions_TLSProtocol", Server_TLSOptions_TLSProtocol_name, Server_TLSOptions_TLSProtocol_value)
 }
 func (m *Gateway) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -531,6 +662,18 @@ func (m *Server) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n2
 	}
+	if len(m.Bind) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintGateway(dAtA, i, uint64(len(m.Bind)))
+		i += copy(dAtA[i:], m.Bind)
+	}
+	if len(m.DefaultEndpoint) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintGateway(dAtA, i, uint64(len(m.DefaultEndpoint)))
+		i += copy(dAtA[i:], m.DefaultEndpoint)
+	}
 	return i, nil
 }
 
@@ -596,6 +739,37 @@ func (m *Server_TLSOptions) MarshalTo(dAtA []byte) (int, error) {
 			i++
 			i += copy(dAtA[i:], s)
 		}
+	}
+	if m.MinProtocolVersion != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintGateway(dAtA, i, uint64(m.MinProtocolVersion))
+	}
+	if m.MaxProtocolVersion != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintGateway(dAtA, i, uint64(m.MaxProtocolVersion))
+	}
+	if len(m.CipherSuites) > 0 {
+		for _, s := range m.CipherSuites {
+			dAtA[i] = 0x4a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if len(m.CredentialName) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintGateway(dAtA, i, uint64(len(m.CredentialName)))
+		i += copy(dAtA[i:], m.CredentialName)
 	}
 	return i, nil
 }
@@ -681,6 +855,14 @@ func (m *Server) Size() (n int) {
 		l = m.Tls.Size()
 		n += 1 + l + sovGateway(uint64(l))
 	}
+	l = len(m.Bind)
+	if l > 0 {
+		n += 1 + l + sovGateway(uint64(l))
+	}
+	l = len(m.DefaultEndpoint)
+	if l > 0 {
+		n += 1 + l + sovGateway(uint64(l))
+	}
 	return n
 }
 
@@ -710,6 +892,22 @@ func (m *Server_TLSOptions) Size() (n int) {
 			l = len(s)
 			n += 1 + l + sovGateway(uint64(l))
 		}
+	}
+	if m.MinProtocolVersion != 0 {
+		n += 1 + sovGateway(uint64(m.MinProtocolVersion))
+	}
+	if m.MaxProtocolVersion != 0 {
+		n += 1 + sovGateway(uint64(m.MaxProtocolVersion))
+	}
+	if len(m.CipherSuites) > 0 {
+		for _, s := range m.CipherSuites {
+			l = len(s)
+			n += 1 + l + sovGateway(uint64(l))
+		}
+	}
+	l = len(m.CredentialName)
+	if l > 0 {
+		n += 1 + l + sovGateway(uint64(l))
 	}
 	return n
 }
@@ -1067,6 +1265,64 @@ func (m *Server) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bind", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGateway
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Bind = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultEndpoint", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGateway
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DefaultEndpoint = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGateway(dAtA[iNdEx:])
@@ -1271,6 +1527,102 @@ func (m *Server_TLSOptions) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.SubjectAltNames = append(m.SubjectAltNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinProtocolVersion", wireType)
+			}
+			m.MinProtocolVersion = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinProtocolVersion |= (Server_TLSOptions_TLSProtocol(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxProtocolVersion", wireType)
+			}
+			m.MaxProtocolVersion = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxProtocolVersion |= (Server_TLSOptions_TLSProtocol(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CipherSuites", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGateway
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CipherSuites = append(m.CipherSuites, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CredentialName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGateway
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGateway
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CredentialName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1528,37 +1880,48 @@ var (
 func init() { proto.RegisterFile("networking/v1alpha3/gateway.proto", fileDescriptorGateway) }
 
 var fileDescriptorGateway = []byte{
-	// 507 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0xcf, 0x6f, 0x12, 0x41,
-	0x14, 0x76, 0x81, 0xf2, 0xe3, 0x11, 0x7e, 0xf4, 0xc5, 0x98, 0x95, 0x03, 0xa5, 0x24, 0xc6, 0xc6,
-	0xe8, 0xa2, 0xe0, 0xc1, 0xd8, 0xc4, 0x04, 0x4d, 0x53, 0x8c, 0xb4, 0x25, 0xb3, 0x70, 0xf1, 0x42,
-	0x86, 0xed, 0x58, 0xc6, 0x2e, 0x3b, 0x9b, 0x99, 0x81, 0x86, 0xff, 0xd0, 0xa3, 0x5e, 0x3c, 0x1b,
-	0xce, 0xfe, 0x11, 0x66, 0x66, 0xb7, 0xa5, 0x26, 0x5a, 0xe3, 0xed, 0xbd, 0xef, 0x7d, 0xdf, 0xb7,
-	0x6f, 0xbe, 0xd9, 0x81, 0xfd, 0x88, 0xe9, 0x2b, 0x21, 0x2f, 0x79, 0x74, 0xd1, 0x59, 0xbd, 0xa0,
-	0x61, 0x3c, 0xa7, 0xbd, 0xce, 0x05, 0xd5, 0xec, 0x8a, 0xae, 0xbd, 0x58, 0x0a, 0x2d, 0xf0, 0x21,
-	0x57, 0x9a, 0x0b, 0x6f, 0x4b, 0xf4, 0xae, 0x89, 0xed, 0x6f, 0x0e, 0x14, 0x8e, 0x13, 0x32, 0x1e,
-	0x42, 0x41, 0x31, 0xb9, 0x62, 0x52, 0xb9, 0x4e, 0x2b, 0x7b, 0x50, 0xee, 0xee, 0x7b, 0x7f, 0x15,
-	0x7a, 0xbe, 0x65, 0x92, 0x6b, 0x05, 0x0e, 0xa1, 0xa8, 0x58, 0xc8, 0x02, 0x2d, 0xa4, 0x9b, 0xb1,
-	0xea, 0xe7, 0x77, 0xa8, 0xd3, 0x4f, 0x7a, 0x7e, 0x2a, 0x39, 0x8a, 0xb4, 0x5c, 0x93, 0x1b, 0x87,
-	0xc6, 0x21, 0x54, 0x7e, 0x1b, 0x61, 0x1d, 0xb2, 0x97, 0x6c, 0xed, 0x3a, 0x2d, 0xe7, 0xa0, 0x44,
-	0x4c, 0x89, 0xf7, 0x61, 0x67, 0x45, 0xc3, 0x25, 0x73, 0x33, 0x16, 0x4b, 0x9a, 0xd7, 0x99, 0x57,
-	0x4e, 0xfb, 0x67, 0x16, 0xf2, 0xc9, 0x7a, 0xd8, 0x83, 0x5c, 0x2c, 0xa4, 0xb6, 0xba, 0x72, 0x77,
-	0xef, 0x8e, 0x8d, 0x46, 0x42, 0x6a, 0x62, 0xc9, 0xc6, 0x79, 0x2e, 0x94, 0x56, 0xf6, 0x1c, 0x25,
-	0x92, 0x34, 0xf8, 0x06, 0xb2, 0x3a, 0x54, 0x6e, 0xd6, 0x3a, 0x3d, 0xfd, 0x67, 0x32, 0xde, 0x78,
-	0xe8, 0x9f, 0xc5, 0x9a, 0x8b, 0x48, 0x11, 0x23, 0x6c, 0x7c, 0xcf, 0x00, 0x6c, 0x31, 0x7c, 0x04,
-	0xd5, 0xb9, 0xd6, 0xb1, 0x9a, 0x4a, 0x76, 0xce, 0x25, 0x0b, 0x92, 0x1d, 0x8b, 0xa4, 0x62, 0x51,
-	0x92, 0x82, 0x38, 0x80, 0xdc, 0x42, 0x9c, 0x27, 0x87, 0xac, 0x76, 0x5f, 0xfe, 0xcf, 0x67, 0x4d,
-	0x69, 0xb4, 0xc4, 0x3a, 0xe0, 0x33, 0xc0, 0xe4, 0xae, 0xa6, 0x01, 0x93, 0x9a, 0x7f, 0xe2, 0x01,
-	0xd5, 0xcc, 0x1e, 0xa7, 0x44, 0x76, 0x93, 0xc9, 0xbb, 0xed, 0x00, 0xf7, 0xa0, 0x1c, 0x4b, 0xbe,
-	0xa2, 0x9a, 0x4d, 0x4d, 0xf0, 0x39, 0xcb, 0x83, 0x14, 0xfa, 0xc0, 0xd6, 0xf8, 0x18, 0x6a, 0x01,
-	0xbd, 0xed, 0xa5, 0xdc, 0x1d, 0x4b, 0xaa, 0x06, 0xf4, 0x96, 0x91, 0xc2, 0x27, 0xb0, 0xab, 0x96,
-	0xb3, 0xcf, 0x2c, 0xd0, 0x53, 0x1a, 0xea, 0x69, 0x44, 0x17, 0x4c, 0xb9, 0x79, 0x1b, 0x6d, 0x2d,
-	0x1d, 0xf4, 0x43, 0x7d, 0x6a, 0xe0, 0x76, 0x17, 0x0a, 0xe9, 0xd6, 0x58, 0x83, 0xf2, 0xa8, 0xef,
-	0xfb, 0xe3, 0x01, 0x39, 0x9b, 0x1c, 0x0f, 0xea, 0xf7, 0x10, 0x20, 0xef, 0xbf, 0x3f, 0x19, 0x0d,
-	0x8f, 0xea, 0x8e, 0xa9, 0x4f, 0x26, 0xe3, 0x49, 0x7f, 0x58, 0xcf, 0xb4, 0x4f, 0x21, 0x67, 0x2e,
-	0x0f, 0x1f, 0x40, 0x3e, 0x5a, 0x2e, 0x66, 0x4c, 0xda, 0x24, 0x2b, 0x24, 0xed, 0xb0, 0x01, 0x45,
-	0xfb, 0x0c, 0x02, 0x11, 0xa6, 0xff, 0xca, 0x4d, 0x8f, 0x08, 0x39, 0xb3, 0x4f, 0x1a, 0x83, 0xad,
-	0xdf, 0x7a, 0x5f, 0x36, 0x4d, 0xe7, 0xeb, 0xa6, 0xe9, 0xfc, 0xd8, 0x34, 0x9d, 0x8f, 0xad, 0x24,
-	0x71, 0x2e, 0x3a, 0x34, 0xe6, 0x9d, 0x3f, 0xbc, 0xb5, 0x59, 0xde, 0xba, 0xf5, 0x7e, 0x05, 0x00,
-	0x00, 0xff, 0xff, 0xc7, 0x7e, 0x45, 0x9e, 0x89, 0x03, 0x00, 0x00,
+	// 674 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xdb, 0x4e, 0xdb, 0x4c,
+	0x10, 0xc6, 0x49, 0xc8, 0x61, 0x42, 0x88, 0x59, 0xa1, 0x5f, 0xfe, 0xb9, 0xe0, 0x90, 0xaa, 0x2a,
+	0xad, 0x5a, 0x07, 0x92, 0x5e, 0xa0, 0x22, 0x55, 0x4a, 0x2b, 0x44, 0xaa, 0x06, 0x12, 0xd9, 0x09,
+	0x17, 0xbd, 0xb1, 0x36, 0xce, 0x42, 0x16, 0x1c, 0xaf, 0xb5, 0xbb, 0x09, 0xe4, 0xcd, 0xfa, 0x08,
+	0xbd, 0x6c, 0xdf, 0xa0, 0xa2, 0x2f, 0x52, 0xed, 0xda, 0x21, 0xe9, 0x89, 0x0a, 0xf5, 0x6e, 0xe6,
+	0x9b, 0x99, 0x6f, 0x66, 0xbe, 0x59, 0x1b, 0x76, 0x42, 0x22, 0xaf, 0x19, 0xbf, 0xa2, 0xe1, 0x45,
+	0x75, 0xb2, 0x8f, 0x83, 0x68, 0x88, 0xeb, 0xd5, 0x0b, 0x2c, 0xc9, 0x35, 0x9e, 0xda, 0x11, 0x67,
+	0x92, 0xa1, 0xff, 0xa9, 0x90, 0x94, 0xd9, 0xf3, 0x44, 0x7b, 0x96, 0x58, 0xf9, 0x62, 0x40, 0xee,
+	0x38, 0x4e, 0x46, 0x87, 0x90, 0x13, 0x84, 0x4f, 0x08, 0x17, 0x96, 0xb1, 0x9d, 0xde, 0x2d, 0xd6,
+	0x76, 0xec, 0x3f, 0x16, 0xda, 0xae, 0xce, 0x74, 0x66, 0x15, 0xa8, 0x05, 0x79, 0x41, 0x02, 0xe2,
+	0x4b, 0xc6, 0xad, 0x94, 0xae, 0xde, 0xbb, 0xa7, 0x3a, 0x69, 0x69, 0xbb, 0x49, 0xc9, 0x51, 0x28,
+	0xf9, 0xd4, 0xb9, 0x63, 0xd8, 0x38, 0x84, 0xd2, 0x0f, 0x21, 0x64, 0x42, 0xfa, 0x8a, 0x4c, 0x2d,
+	0x63, 0xdb, 0xd8, 0x2d, 0x38, 0xca, 0x44, 0xeb, 0xb0, 0x3c, 0xc1, 0xc1, 0x98, 0x58, 0x29, 0x8d,
+	0xc5, 0xce, 0xab, 0xd4, 0x81, 0x51, 0xf9, 0x98, 0x83, 0x6c, 0x3c, 0x1e, 0xaa, 0x43, 0x26, 0x62,
+	0x5c, 0xea, 0xba, 0x62, 0x6d, 0xeb, 0x9e, 0x89, 0x3a, 0x8c, 0x4b, 0x47, 0x27, 0x2b, 0xe6, 0x21,
+	0x13, 0x52, 0xe8, 0x3d, 0x0a, 0x4e, 0xec, 0xa0, 0xd7, 0x90, 0x96, 0x81, 0xb0, 0xd2, 0x9a, 0xe9,
+	0xf9, 0x5f, 0x95, 0xb1, 0xbb, 0x2d, 0xb7, 0x1d, 0x49, 0xca, 0x42, 0xe1, 0xa8, 0x42, 0x84, 0x20,
+	0xd3, 0xa7, 0xe1, 0xc0, 0xca, 0xe8, 0x71, 0xb5, 0x8d, 0x9e, 0x82, 0x39, 0x20, 0xe7, 0x78, 0x1c,
+	0x48, 0x8f, 0x84, 0x83, 0x88, 0xd1, 0x50, 0x5a, 0xcb, 0x3a, 0x5e, 0x4e, 0xf0, 0xa3, 0x04, 0xde,
+	0xf8, 0xb6, 0x0c, 0x30, 0xa7, 0x44, 0x8f, 0x61, 0x75, 0x28, 0x65, 0x24, 0x3c, 0x4e, 0x06, 0x94,
+	0x13, 0x3f, 0x5e, 0x31, 0xef, 0x94, 0x34, 0xea, 0x24, 0x20, 0x6a, 0x42, 0x66, 0xc4, 0x06, 0xb1,
+	0x46, 0xab, 0xb5, 0x97, 0x0f, 0x99, 0x5a, 0x99, 0xaa, 0xd6, 0xd1, 0x0c, 0xe8, 0x05, 0xa0, 0xf8,
+	0xd4, 0x9e, 0x4f, 0xb8, 0xa4, 0xe7, 0xd4, 0xc7, 0x92, 0x68, 0x35, 0x0a, 0xce, 0x5a, 0x1c, 0x79,
+	0x3b, 0x0f, 0xa0, 0x2d, 0x28, 0x46, 0x9c, 0x4e, 0xb0, 0x24, 0x9e, 0xba, 0x5b, 0xbc, 0x34, 0x24,
+	0xd0, 0x7b, 0x32, 0x45, 0x4f, 0xa0, 0xec, 0xe3, 0x45, 0x2e, 0x91, 0x6c, 0xbe, 0xea, 0xe3, 0x05,
+	0x22, 0x81, 0x9e, 0xc1, 0x9a, 0x18, 0xf7, 0x2f, 0x89, 0x2f, 0x3d, 0x1c, 0x48, 0x2f, 0xc4, 0x23,
+	0x22, 0xac, 0xac, 0xbe, 0x4c, 0x39, 0x09, 0x34, 0x02, 0x79, 0xaa, 0x60, 0x74, 0x09, 0xeb, 0x23,
+	0x1a, 0x7a, 0xfa, 0xd5, 0xfb, 0x2c, 0xf0, 0xd4, 0xcb, 0xa4, 0x2c, 0xb4, 0x72, 0x7a, 0xfd, 0x83,
+	0x87, 0xae, 0xdf, 0x49, 0x78, 0x1c, 0x34, 0xa2, 0xe1, 0xcc, 0x39, 0x8b, 0x39, 0x75, 0x2f, 0x7c,
+	0xf3, 0x6b, 0xaf, 0xfc, 0x3f, 0xf7, 0xc2, 0x37, 0x3f, 0xf7, 0x7a, 0x04, 0x25, 0x9f, 0x46, 0x43,
+	0xc2, 0x3d, 0x31, 0xa6, 0x4a, 0xaa, 0x82, 0xde, 0x7f, 0x25, 0x06, 0x5d, 0x8d, 0x69, 0x45, 0x39,
+	0x19, 0x90, 0x50, 0x52, 0x1c, 0x68, 0x9d, 0x2c, 0x48, 0x14, 0xbd, 0x83, 0x95, 0x4c, 0x95, 0x26,
+	0xe4, 0x92, 0xdb, 0xa2, 0x32, 0x14, 0x3b, 0x0d, 0xd7, 0xed, 0x36, 0x9d, 0x76, 0xef, 0xb8, 0x69,
+	0x2e, 0x21, 0x80, 0xac, 0xfb, 0xee, 0xa4, 0xd3, 0x3a, 0x32, 0x0d, 0x65, 0x9f, 0xf4, 0xba, 0xbd,
+	0x46, 0xcb, 0x4c, 0xa1, 0x75, 0x30, 0x1b, 0xbd, 0x6e, 0xdb, 0x5b, 0xcc, 0x4e, 0x57, 0xda, 0x50,
+	0x5c, 0x18, 0x1d, 0xad, 0x40, 0xbe, 0xdb, 0x72, 0x3d, 0x95, 0x68, 0x2e, 0xa1, 0xa2, 0x6e, 0x73,
+	0xb6, 0xef, 0xed, 0x99, 0xc6, 0xdc, 0xd9, 0x37, 0x53, 0x73, 0xa7, 0x66, 0xa6, 0xe7, 0x4e, 0xdd,
+	0xcc, 0x54, 0x4e, 0x21, 0xa3, 0x3e, 0x44, 0xf4, 0x1f, 0x64, 0xc3, 0xf1, 0xa8, 0x4f, 0xb8, 0x7e,
+	0xd6, 0x25, 0x27, 0xf1, 0xd0, 0x06, 0xe4, 0x67, 0x82, 0x27, 0xdf, 0xfd, 0x9d, 0xaf, 0x3e, 0x30,
+	0xbd, 0x74, 0xfc, 0x26, 0xb5, 0xfd, 0xc6, 0xfe, 0x74, 0xbb, 0x69, 0x7c, 0xbe, 0xdd, 0x34, 0xbe,
+	0xde, 0x6e, 0x1a, 0x1f, 0xb6, 0xe3, 0x9b, 0x50, 0x56, 0xc5, 0x11, 0xad, 0xfe, 0xe6, 0xbf, 0xd9,
+	0xcf, 0x6a, 0xb6, 0xfa, 0xf7, 0x00, 0x00, 0x00, 0xff, 0xff, 0xaa, 0xbd, 0x84, 0xff, 0x55, 0x05,
+	0x00, 0x00,
 }
