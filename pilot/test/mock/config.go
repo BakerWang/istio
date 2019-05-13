@@ -29,9 +29,9 @@ import (
 	mccpb "istio.io/api/mixer/v1/config/client"
 	networking "istio.io/api/networking/v1alpha3"
 	rbac "istio.io/api/rbac/v1alpha1"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/model/test"
-	"istio.io/istio/pkg/log"
 	pkgtest "istio.io/istio/pkg/test"
 )
 
@@ -165,13 +165,6 @@ var (
 		Targets: []*authn.TargetSelector{{
 			Name: "hello",
 		}},
-		Peers: []*authn.PeerAuthenticationMethod{{
-			Params: &authn.PeerAuthenticationMethod_Mtls{},
-		}},
-	}
-
-	// ExampleAuthenticationMeshPolicy is an example cluster-scoped authentication Policy
-	ExampleAuthenticationMeshPolicy = &authn.Policy{
 		Peers: []*authn.PeerAuthenticationMethod{{
 			Params: &authn.PeerAuthenticationMethod_Mtls{},
 		}},

@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/security/pkg/k8s/controller"
 	"istio.io/istio/security/tests/integration"
 	"istio.io/istio/tests/integration_old/framework"
@@ -60,7 +60,7 @@ func TestCertificateRotation(t *testing.T) {
 		if i > 0 {
 			t.Logf("checking certificate rotation in %v seconds", term)
 			time.Sleep(time.Duration(term) * time.Second)
-			term = term * 2
+			term *= 2
 		}
 
 		secret, err := integration.WaitForSecretExist(testEnv.ClientSet, testEnv.NameSpace, "istio.default",

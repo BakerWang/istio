@@ -17,12 +17,21 @@ package namespace
 import (
 	"fmt"
 	"io"
-
-	"github.com/google/uuid"
+	"math/rand"
+	"sync"
+	"time"
 
 	"istio.io/istio/pkg/test/framework/components/environment/kube"
+	"istio.io/istio/pkg/test/framework/components/istio"
 	"istio.io/istio/pkg/test/framework/resource"
 	k "istio.io/istio/pkg/test/kube"
+	"istio.io/istio/pkg/test/scopes"
+)
+
+var (
+	idctr int64
+	rnd   = rand.New(rand.NewSource(time.Now().UnixNano()))
+	mu    sync.Mutex
 )
 
 // kubeNamespace represents a Kubernetes namespace. It is tracked as a resource.
@@ -45,20 +54,27 @@ func (n *kubeNamespace) ID() resource.ID {
 }
 
 // Close implements io.Closer
-func (n *kubeNamespace) Close() error {
+func (n *kubeNamespace) Close() (err error) {
 	if n.name != "" {
+		scopes.Framework.Debugf("%s deleting namespace", n.id)
 		ns := n.name
 		n.name = ""
-		return n.a.DeleteNamespace(ns)
+		err = n.a.DeleteNamespace(ns)
 	}
 
-	return nil
+	scopes.Framework.Debugf("%s close complete (err:%v)", n.id, err)
+	return
 }
 
 func claimKube(ctx resource.Context, name string) (Instance, error) {
 	env := ctx.Environment().(*kube.Environment)
+	cfg, err := istio.DefaultConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if !env.Accessor.NamespaceExists(name) {
-		if err := env.CreateNamespace(name, "istio-test", true); err != nil {
+		if err := env.CreateNamespaceWithInjectionEnabled(name, "istio-test", cfg.ConfigNamespace); err != nil {
 			return nil, err
 		}
 
@@ -68,10 +84,29 @@ func claimKube(ctx resource.Context, name string) (Instance, error) {
 
 // NewNamespace allocates a new testing namespace.
 func newKube(ctx resource.Context, prefix string, inject bool) (Instance, error) {
+	mu.Lock()
+	idctr++
+	nsid := idctr
+	r := rnd.Intn(99999)
+	mu.Unlock()
+
 	env := ctx.Environment().(*kube.Environment)
-	ns := fmt.Sprintf("%s-%s", prefix, uuid.New().String())
-	if err := env.CreateNamespace(ns, "istio-test", inject); err != nil {
-		return nil, err
+	ns := fmt.Sprintf("%s-%d-%d", prefix, nsid, r)
+
+	if inject {
+		cfg, err := istio.DefaultConfig(ctx)
+		if err != nil {
+			return nil, err
+		}
+		err = env.CreateNamespaceWithInjectionEnabled(ns, "istio-test", cfg.ConfigNamespace)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := env.CreateNamespace(ns, "istio-test")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	n := &kubeNamespace{name: ns, a: env.Accessor}

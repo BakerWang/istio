@@ -39,7 +39,7 @@ var (
 		Type:        model.SidecarProxy,
 		IPAddresses: []string{"1.1.1.1"},
 		ID:          "v0.default",
-		DNSDomains:  []string{"default.example.org"},
+		DNSDomain:   "default.example.org",
 		Metadata: map[string]string{
 			model.NodeMetadataConfigNamespace: "not-default",
 			"ISTIO_PROXY_VERSION":             "1.1",
@@ -65,9 +65,9 @@ func TestOutboundListenerConflict_HTTPWithCurrentTCP(t *testing.T) {
 	// The oldest service port is TCP.  We should encounter conflicts when attempting to add the HTTP ports. Purposely
 	// storing the services out of time order to test that it's being sorted properly.
 	testOutboundListenerConflict(t,
-		buildService("test1,com", wildcardIP, model.ProtocolHTTP, tnow.Add(1*time.Second)),
-		buildService("test2,com", wildcardIP, model.ProtocolTCP, tnow),
-		buildService("test3,com", wildcardIP, model.ProtocolHTTP, tnow.Add(2*time.Second)))
+		buildService("test1.com", wildcardIP, model.ProtocolHTTP, tnow.Add(1*time.Second)),
+		buildService("test2.com", wildcardIP, model.ProtocolTCP, tnow),
+		buildService("test3.com", wildcardIP, model.ProtocolHTTP, tnow.Add(2*time.Second)))
 }
 
 func TestOutboundListenerConflict_TCPWithCurrentHTTP(t *testing.T) {
@@ -121,16 +121,56 @@ func TestInboundListenerConfig_HTTP(t *testing.T) {
 	// Add a service and verify it's config
 	testInboundListenerConfig(t,
 		buildService("test.com", wildcardIP, model.ProtocolHTTP, tnow))
+	testInboundListenerConfigWithoutServices(t)
 	testInboundListenerConfigWithSidecar(t,
 		buildService("test.com", wildcardIP, model.ProtocolHTTP, tnow))
+	testInboundListenerConfigWithSidecarWithoutServices(t)
 }
 
 func TestOutboundListenerConfig_WithSidecar(t *testing.T) {
 	// Add a service and verify it's config
-	testOutboundListenerConfigWithSidecar(t,
-		buildService("test1,com", wildcardIP, model.ProtocolHTTP, tnow.Add(1*time.Second)),
-		buildService("test2,com", wildcardIP, model.ProtocolTCP, tnow),
-		buildService("test3,com", wildcardIP, model.ProtocolHTTP, tnow.Add(2*time.Second)))
+	services := []*model.Service{
+		buildService("test1.com", wildcardIP, model.ProtocolHTTP, tnow.Add(1*time.Second)),
+		buildService("test2.com", wildcardIP, model.ProtocolTCP, tnow),
+		buildService("test3.com", wildcardIP, model.ProtocolHTTP, tnow.Add(2*time.Second))}
+	testOutboundListenerConfigWithSidecar(t, services...)
+	testOutboundListenerConfigWithSidecarWithCaptureModeNone(t, services...)
+}
+
+func TestGetActualWildcardAndLocalHost(t *testing.T) {
+	tests := []struct {
+		name     string
+		proxy    *model.Proxy
+		expected [2]string
+	}{
+		{
+			name: "ipv4 only",
+			proxy: &model.Proxy{
+				IPAddresses: []string{"1.1.1.1", "127.0.0.1", "2.2.2.2"},
+			},
+			expected: [2]string{WildcardAddress, LocalhostAddress},
+		},
+		{
+			name: "ipv6 only",
+			proxy: &model.Proxy{
+				IPAddresses: []string{"1111:2222::1", "::1", "2222:3333::1"},
+			},
+			expected: [2]string{WildcardIPv6Address, LocalhostIPv6Address},
+		},
+		{
+			name: "mixed ipv4 and ipv6",
+			proxy: &model.Proxy{
+				IPAddresses: []string{"1111:2222::1", "::1", "127.0.0.1", "2.2.2.2", "2222:3333::1"},
+			},
+			expected: [2]string{WildcardAddress, LocalhostAddress},
+		},
+	}
+	for _, tt := range tests {
+		wm, lh := getActualWildcardAndLocalHost(tt.proxy)
+		if wm != tt.expected[0] && lh != tt.expected[1] {
+			t.Errorf("Test %s failed, expected: %s / %s got: %s / %s", tt.name, tt.expected[0], tt.expected[1], wm, lh)
+		}
+	}
 }
 
 func testOutboundListenerConflict(t *testing.T, services ...*model.Service) {
@@ -180,6 +220,15 @@ func testInboundListenerConfig(t *testing.T, services ...*model.Service) {
 	}
 }
 
+func testInboundListenerConfigWithoutServices(t *testing.T) {
+	t.Helper()
+	p := &fakePlugin{}
+	listeners := buildInboundListeners(p, nil)
+	if expected := 0; len(listeners) != expected {
+		t.Fatalf("expected %d listeners, found %d", expected, len(listeners))
+	}
+}
+
 func testInboundListenerConfigWithSidecar(t *testing.T, services ...*model.Service) {
 	t.Helper()
 	p := &fakePlugin{}
@@ -209,6 +258,34 @@ func testInboundListenerConfigWithSidecar(t *testing.T, services ...*model.Servi
 
 	if !isHTTPListener(listeners[0]) {
 		t.Fatal("expected HTTP listener, found TCP")
+	}
+}
+
+func testInboundListenerConfigWithSidecarWithoutServices(t *testing.T) {
+	t.Helper()
+	p := &fakePlugin{}
+	sidecarConfig := &model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Name:      "foo-without-service",
+			Namespace: "not-default",
+		},
+		Spec: &networking.Sidecar{
+			Ingress: []*networking.IstioIngressListener{
+				{
+					Port: &networking.Port{
+						Number:   8080,
+						Protocol: "HTTP",
+						Name:     "uds",
+					},
+					Bind:            "1.1.1.1",
+					DefaultEndpoint: "127.0.0.1:80",
+				},
+			},
+		},
+	}
+	listeners := buildInboundListeners(p, sidecarConfig)
+	if expected := 0; len(listeners) != expected {
+		t.Fatalf("expected %d listeners, found %d", expected, len(listeners))
 	}
 }
 
@@ -247,6 +324,78 @@ func testOutboundListenerConfigWithSidecar(t *testing.T, services ...*model.Serv
 	}
 	if !isHTTPListener(listeners[1]) {
 		t.Fatal("expected HTTP listener on port 9000, found TCP")
+	}
+}
+
+func testOutboundListenerConfigWithSidecarWithCaptureModeNone(t *testing.T, services ...*model.Service) {
+	t.Helper()
+	p := &fakePlugin{}
+	sidecarConfig := &model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Name:      "foo",
+			Namespace: "not-default",
+		},
+		Spec: &networking.Sidecar{
+			Egress: []*networking.IstioEgressListener{
+				{
+					// Bind + Port
+					CaptureMode: networking.CaptureMode_NONE,
+					Port: &networking.Port{
+						Number:   9090,
+						Protocol: "HTTP",
+						Name:     "grpc",
+					},
+					Bind:  "127.1.1.2",
+					Hosts: []string{"*/*"},
+				},
+				{
+					// Bind Only
+					CaptureMode: networking.CaptureMode_NONE,
+					Bind:        "127.1.1.2",
+					Hosts:       []string{"*/*"},
+				},
+				{
+					// Port Only
+					CaptureMode: networking.CaptureMode_NONE,
+					Port: &networking.Port{
+						Number:   9090,
+						Protocol: "HTTP",
+						Name:     "grpc",
+					},
+					Hosts: []string{"*/*"},
+				},
+				{
+					// None
+					CaptureMode: networking.CaptureMode_NONE,
+					Hosts:       []string{"*/*"},
+				},
+			},
+		},
+	}
+	listeners := buildOutboundListeners(p, sidecarConfig, services...)
+	if len(listeners) != 4 {
+		t.Fatalf("expected %d listeners, found %d", 4, len(listeners))
+	}
+
+	expectedListeners := map[string]string{
+		"127.1.1.2_9090": "HTTP",
+		"127.1.1.2_8080": "TCP",
+		"127.0.0.1_9090": "HTTP",
+		"127.0.0.1_8080": "TCP",
+	}
+
+	for _, listener := range listeners {
+		listenerName := listener.Name
+		expectedListenerType := expectedListeners[listenerName]
+		if expectedListenerType == "" {
+			t.Fatalf("listener %s not expected", listenerName)
+		}
+		if expectedListenerType == "TCP" && isHTTPListener(listener) {
+			t.Fatalf("expected TCP listener %s, but found HTTP", listenerName)
+		}
+		if expectedListenerType == "HTTP" && !isHTTPListener(listener) {
+			t.Fatalf("expected HTTP listener %s, but found TCP", listenerName)
+		}
 	}
 }
 

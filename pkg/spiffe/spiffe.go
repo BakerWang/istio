@@ -17,8 +17,9 @@ package spiffe
 import (
 	"fmt"
 	"strings"
+	"sync"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 )
 
 const (
@@ -31,15 +32,21 @@ const (
 )
 
 var (
-	trustDomain = defaultTrustDomain
+	trustDomain      = defaultTrustDomain
+	trustDomainMutex sync.RWMutex
 )
 
 func SetTrustDomain(value string) {
 	// Replace special characters in spiffe
-	trustDomain = strings.Replace(value, "@", ".", -1)
+	v := strings.Replace(value, "@", ".", -1)
+	trustDomainMutex.Lock()
+	trustDomain = v
+	trustDomainMutex.Unlock()
 }
 
 func GetTrustDomain() string {
+	trustDomainMutex.RLock()
+	defer trustDomainMutex.RUnlock()
 	return trustDomain
 }
 
@@ -58,16 +65,16 @@ func GenSpiffeURI(ns, serviceAccount string) (string, error) {
 	var err error
 	if ns == "" || serviceAccount == "" {
 		err = fmt.Errorf(
-			"namespace or service account can't be empty ns=%v serviceAccount=%v", ns, serviceAccount)
+			"namespace or service account empty for SPIFFEE uri ns=%v serviceAccount=%v", ns, serviceAccount)
 	}
-	return URIPrefix + trustDomain + "/ns/" + ns + "/sa/" + serviceAccount, err
+	return URIPrefix + GetTrustDomain() + "/ns/" + ns + "/sa/" + serviceAccount, err
 }
 
 // MustGenSpiffeURI returns the formatted uri(SPIFFEE format for now) for the certificate and logs if there was an error.
 func MustGenSpiffeURI(ns, serviceAccount string) string {
 	uri, err := GenSpiffeURI(ns, serviceAccount)
 	if err != nil {
-		log.Error(err.Error())
+		log.Debug(err.Error())
 	}
 	return uri
 }
@@ -79,7 +86,5 @@ func GenCustomSpiffe(identity string) string {
 		return ""
 	}
 
-	// replace special character in spiffe
-	trustDomain = strings.Replace(trustDomain, "@", ".", -1)
-	return URIPrefix + trustDomain + "/" + identity
+	return URIPrefix + GetTrustDomain() + "/" + identity
 }

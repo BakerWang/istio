@@ -40,7 +40,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 
 	mcp "istio.io/api/mcp/v1alpha1"
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 	mcprate "istio.io/istio/pkg/mcp/rate"
 	"istio.io/istio/pkg/mcp/server"
 	"istio.io/istio/pkg/mcp/sink"
@@ -371,10 +371,6 @@ func (d *driver) initServer() error {
 	d.listener = l
 
 	d.serverAddress = l.Addr().String()
-	if err != nil {
-		_ = l.Close()
-		return err
-	}
 
 	d.grpcServer = grpc.NewServer()
 	mcp.RegisterResourceSourceServer(d.grpcServer, s)

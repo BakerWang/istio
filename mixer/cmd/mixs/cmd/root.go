@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
+	"istio.io/common/pkg/collateral"
+	"istio.io/common/pkg/version"
 	"istio.io/istio/mixer/cmd/shared"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/mixer/pkg/template"
-	"istio.io/istio/pkg/collateral"
-	"istio.io/istio/pkg/version"
 )
 
 // GetRootCmd returns the root of the cobra command-tree.
@@ -44,7 +44,6 @@ func GetRootCmd(args []string, info map[string]template.Info, adapters []adapter
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 
 	rootCmd.AddCommand(serverCmd(info, adapters, printf, fatalf))
-	rootCmd.AddCommand(crdCmd(info, adapters, printf, fatalf))
 	rootCmd.AddCommand(probeCmd(printf, fatalf))
 	rootCmd.AddCommand(version.CobraCommand())
 	rootCmd.AddCommand(collateral.CobraCommand(rootCmd, &doc.GenManHeader{

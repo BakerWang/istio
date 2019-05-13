@@ -20,11 +20,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
 	. "github.com/onsi/gomega"
 
+	"istio.io/common/pkg/appsignals"
 	"istio.io/istio/galley/pkg/meshconfig"
 	kubeMeta "istio.io/istio/galley/pkg/metadata/kube"
 	"istio.io/istio/galley/pkg/runtime"
@@ -245,6 +247,7 @@ func TestDynamicResource(t *testing.T) {
 		// Copy a file to the dir
 		u := copyAndParseSinglePartFile(t, dir, fileName, virtualServiceYAML)
 		u.SetResourceVersion("v1")
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the Add event.
 		expected := resource.Event{
@@ -261,6 +264,7 @@ func TestDynamicResource(t *testing.T) {
 		// Overwrite the original file
 		u := copyAndParseSinglePartFile(t, dir, fileName, virtualServiceChangedYAML)
 		u.SetResourceVersion("v2")
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the update event.
 		expected := resource.Event{
@@ -280,6 +284,7 @@ func TestDynamicResource(t *testing.T) {
 		u := &unstructured.Unstructured{}
 		parseYaml(t, virtualServiceChangedYAML, u)
 		u.SetResourceVersion("v2")
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the update event.
 		expected := resource.Event{
@@ -311,9 +316,7 @@ func TestDuplicateResourceNamesDifferentTypes(t *testing.T) {
 	actual2 := events.Expect(t, ch)
 	if actual2.Entry.ID.Collection == kubeMeta.Types.Get("VirtualService").Target.Collection {
 		// Reorder
-		tmp := actual2
-		actual2 = actual1
-		actual1 = tmp
+		actual2, actual1 = actual1, actual2
 	}
 	// Expect the add of VirtualService
 	u[0].SetResourceVersion("v0")
@@ -357,6 +360,7 @@ func TestBuiltinResource(t *testing.T) {
 
 		// Copy a file to the dir
 		copyFile(t, dir, fileName, builtinYAML)
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the Add event.
 		svc.SetResourceVersion("v1")
@@ -376,6 +380,7 @@ func TestBuiltinResource(t *testing.T) {
 		newClusterIP := "10.43.240.11"
 		newYAML := strings.Replace(builtinYAML, oldClusterIP, newClusterIP, -1)
 		copyFile(t, dir, fileName, newYAML)
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the update event.
 		svc.Spec.ClusterIP = newClusterIP
@@ -393,6 +398,7 @@ func TestBuiltinResource(t *testing.T) {
 
 		// Delete the file.
 		deleteFiles(t, dir, fileName)
+		appsignals.Notify("test", syscall.SIGUSR1)
 
 		// Expect the update event.
 		expected := resource.Event{
@@ -457,6 +463,7 @@ func TestMultipartEvents(t *testing.T) {
 		g := NewGomegaWithT(t)
 		// Now overwrite the file which removes the last resource.
 		_ = copyAndParseFile(t, dir, "mixer.yaml", mixerPartYAML)
+		appsignals.Notify("test", syscall.SIGUSR1)
 		obj := objs[2]
 		expected := resource.Event{
 			Kind: resource.Deleted,

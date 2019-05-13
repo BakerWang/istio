@@ -125,10 +125,6 @@ func gatewayID(ip string) string { //nolint: unparam
 	return fmt.Sprintf("router~%s~istio-gateway-644fc65469-96dzt.istio-system~istio-system.svc.cluster.local", ip)
 }
 
-func ingressID(ip string) string {
-	return fmt.Sprintf("ingress~%s~istio-ingress-7cd767fcb4-kl6gt.pilot-noauth-system~pilot-noauth-system.svc.cluster.local", ip)
-}
-
 // initLocalPilotTestEnv creates a local, in process Pilot with XDSv2 support and a set
 // of common test configs. This is a singleton server, reused for all tests in this package.
 //
@@ -328,6 +324,7 @@ func testPorts(base int) []*model.Port {
 
 // Test XDS with real envoy and with mixer.
 func TestEnvoy(t *testing.T) {
+	t.Skip("https://github.com/istio/istio/issues/13294")
 	_, tearDown := initLocalPilotTestEnv(t)
 	defer func() {
 		if testEnv != nil {
@@ -440,7 +437,7 @@ func getLocalIP() string {
 // nolint: unparam
 func newEndpointWithAccount(ip, account, version string) []*model.IstioEndpoint {
 	return []*model.IstioEndpoint{
-		&model.IstioEndpoint{
+		{
 			Address:         ip,
 			ServicePortName: "http-main",
 			EndpointPort:    80,

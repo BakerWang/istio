@@ -17,9 +17,9 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"istio.io/common/pkg/log"
+	"istio.io/common/pkg/probe"
 	"istio.io/istio/mixer/cmd/shared"
-	"istio.io/istio/pkg/log"
-	"istio.io/istio/pkg/probe"
 )
 
 // NewProbeCmd creates the cobra.Command for the probe command

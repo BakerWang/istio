@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/peer"
 
 	mcp "istio.io/api/mcp/v1alpha1"
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/pkg/mcp/internal"
 	"istio.io/istio/pkg/mcp/monitoring"
 	"istio.io/istio/pkg/mcp/rate"
@@ -200,7 +200,7 @@ func (s *Source) newConnection(stream Stream) *connection {
 		queue:    internal.NewUniqueScheduledQueue(len(s.collections)),
 	}
 
-	var collections []string
+	collections := make([]string, 0, len(s.collections))
 	for i := range s.collections {
 		collection := s.collections[i]
 		w := &watch{
@@ -347,7 +347,7 @@ func (con *connection) pushServerResponse(w *watch, resp *WatchResponse) error {
 	}
 
 	// increment nonce
-	con.streamNonce = con.streamNonce + 1
+	con.streamNonce++
 	msg.Nonce = strconv.FormatInt(con.streamNonce, 10)
 	if err := con.stream.Send(msg); err != nil {
 		con.reporter.RecordSendError(err, status.Code(err))
@@ -399,6 +399,10 @@ func (con *connection) close() {
 }
 
 func (con *connection) processClientRequest(req *mcp.RequestResources) error {
+	if isTriggerResponse(req) {
+		return nil
+	}
+
 	collection := req.Collection
 
 	con.reporter.RecordRequestSize(collection, con.id, internal.ProtoSize(req))

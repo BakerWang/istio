@@ -15,16 +15,20 @@
 package pilot
 
 import (
+	"errors"
 	"io"
 	"net"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 
+	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/bootstrap"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/proxy/envoy"
 	"istio.io/istio/pkg/test/framework/components/environment/native"
 	"istio.io/istio/pkg/test/framework/resource"
+	"istio.io/istio/pkg/test/scopes"
 )
 
 var _ Instance = &nativeComponent{}
@@ -42,7 +46,6 @@ type nativeComponent struct {
 
 	environment *native.Environment
 	*client
-	model.ConfigStoreCache
 	server   *bootstrap.Server
 	stopChan chan struct{}
 	config   Config
@@ -50,6 +53,11 @@ type nativeComponent struct {
 
 // NewNativeComponent factory function for the component
 func newNative(ctx resource.Context, config Config) (Instance, error) {
+	if config.Galley == nil {
+		return nil, errors.New("galley must be provided")
+	}
+
+	env := ctx.Environment().(*native.Environment)
 	instance := &nativeComponent{
 		environment: ctx.Environment().(*native.Environment),
 		stopChan:    make(chan struct{}),
@@ -65,10 +73,16 @@ func newNative(ctx resource.Context, config Config) (Instance, error) {
 		SecureGrpcAddr: "",
 	}
 
+	tmpMesh := model.DefaultMeshConfig()
+	mesh := &tmpMesh
+	if config.MeshConfig != nil {
+		mesh = config.MeshConfig
+	}
+
 	bootstrapArgs := bootstrap.PilotArgs{
-		Namespace:        "istio-system",
+		Namespace:        env.SystemNamespace,
 		DiscoveryOptions: options,
-		MeshConfig:       instance.environment.Mesh,
+		MeshConfig:       mesh,
 		// Use the config store for service entries as well.
 		Service: bootstrap.ServiceArgs{
 			// A ServiceEntry registry is added by default, which is what we want. Don't include any other registries.
@@ -79,18 +93,14 @@ func newNative(ctx resource.Context, config Config) (Instance, error) {
 		ForceStop: true,
 	}
 
-	if config.Galley != nil {
-		// Set as MCP address, note needs to strip 'tcp://' from the address prefix
-		bootstrapArgs.MCPServerAddrs = []string{"mcp://" + config.Galley.Address()[6:]}
-		bootstrapArgs.MCPMaxMessageSize = bootstrap.DefaultMCPMaxMsgSize
-	} else {
-		bootstrapArgs.Config = bootstrap.ConfigArgs{
-			Controller: instance.environment.ServiceManager.ConfigStore,
-		}
+	if bootstrapArgs.MeshConfig == nil {
+		bootstrapArgs.MeshConfig = &meshconfig.MeshConfig{}
 	}
-
-	// Save the config store.
-	instance.ConfigStoreCache = instance.environment.ServiceManager.ConfigStore
+	// Set as MCP address, note needs to strip 'tcp://' from the address prefix
+	bootstrapArgs.MeshConfig.ConfigSources = []*meshconfig.ConfigSource{
+		{Address: config.Galley.Address()[6:]},
+	}
+	bootstrapArgs.MCPMaxMessageSize = bootstrap.DefaultMCPMaxMsgSize
 
 	var err error
 	// Create the server for the discovery service.
@@ -98,12 +108,13 @@ func newNative(ctx resource.Context, config Config) (Instance, error) {
 		return nil, err
 	}
 
-	if instance.client, err = newClient(instance.server.GRPCListeningAddr.(*net.TCPAddr)); err != nil {
+	// Start the server
+	if err = instance.server.Start(instance.stopChan); err != nil {
 		return nil, err
 	}
 
-	// Start the server
-	if err = instance.server.Start(instance.stopChan); err != nil {
+	time.Sleep(1 * time.Second)
+	if instance.client, err = newClient(instance.server.GRPCListeningAddr.(*net.TCPAddr)); err != nil {
 		return nil, err
 	}
 
@@ -117,12 +128,16 @@ func (c *nativeComponent) ID() resource.ID {
 
 func (c *nativeComponent) Close() (err error) {
 	if c.client != nil {
+		scopes.Framework.Debugf("%s closing client", c.id)
 		err = multierror.Append(err, c.client.Close()).ErrorOrNil()
 	}
 
 	if c.stopChan != nil {
-		c.stopChan <- struct{}{}
+		scopes.Framework.Debugf("%s stopping Pilot server", c.id)
+		close(c.stopChan)
 	}
+
+	scopes.Framework.Debugf("%s close complete (err:%v)", c.id, err)
 	return
 }
 

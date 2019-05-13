@@ -15,27 +15,25 @@
 package yml
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 
 	"github.com/ghodss/yaml"
 )
 
-const (
-	yamlSeparator = "\n---\n"
-)
-
 // ApplyNamespace applies the given namespaces to the resources in the yamlText.
 func ApplyNamespace(yamlText, ns string) (string, error) {
-	chunks := bytes.Split([]byte(yamlText), []byte(yamlSeparator))
+	chunks := SplitString(yamlText)
 
 	result := ""
 	for _, chunk := range chunks {
+		if chunk == "" {
+			continue
+		}
 		if result != "" {
 			result += yamlSeparator
 		}
-		y, err := applyNamespace(string(chunk), ns)
+		y, err := applyNamespace(chunk, ns)
 		if err != nil {
 			return "", err
 		}

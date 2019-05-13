@@ -19,12 +19,12 @@ import (
 	"net"
 	"net/http"
 
+	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
-	ocprom "go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"
 
-	"istio.io/istio/pkg/log"
-	"istio.io/istio/pkg/version"
+	"istio.io/common/pkg/log"
+	"istio.io/common/pkg/version"
 )
 
 type monitor struct {

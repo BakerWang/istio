@@ -24,28 +24,32 @@ import (
 	"istio.io/istio/pkg/test/framework/components/mixer"
 	"istio.io/istio/pkg/test/framework/components/namespace"
 	"istio.io/istio/pkg/test/framework/components/policybackend"
+	"istio.io/istio/pkg/test/framework/label"
 	"istio.io/istio/pkg/test/util/retry"
 	"istio.io/istio/pkg/test/util/tmpl"
 )
 
 func TestMixer_Report_Direct(t *testing.T) {
-	ctx := framework.NewContext(t)
-	defer ctx.Done(t)
+	framework.
+		NewTest(t).
+		// TODO(https://github.com/istio/istio/issues/13811)
+		Label(label.Flaky).
+		Run(func(ctx framework.TestContext) {
 
-	g := galley.NewOrFail(t, ctx, galley.Config{})
-	mxr := mixer.NewOrFail(t, ctx, mixer.Config{Galley: g})
-	be := policybackend.NewOrFail(t, ctx)
+			g := galley.NewOrFail(t, ctx, galley.Config{})
+			mxr := mixer.NewOrFail(t, ctx, mixer.Config{Galley: g})
+			be := policybackend.NewOrFail(t, ctx)
 
-	ns := namespace.NewOrFail(t, ctx, "mixreport", false)
+			ns := namespace.NewOrFail(t, ctx, "mixreport", false)
 
-	g.ApplyConfigOrFail(t,
-		ns,
-		testReportConfig,
-		be.CreateConfigSnippet("handler1", ns.Name()))
+			g.ApplyConfigOrFail(t,
+				ns,
+				testReportConfig,
+				be.CreateConfigSnippet("handler1", ns.Name(), policybackend.InProcess))
 
-	expected := tmpl.EvaluateOrFail(t, `
+			expected := tmpl.EvaluateOrFail(t, `
 {
-  "name": "metric1.metric.{{.TestNamespace}}",
+  "name": "metric1.instance.{{.TestNamespace}}",
   "value": {
     "int64Value": "2"
   },
@@ -62,37 +66,40 @@ func TestMixer_Report_Direct(t *testing.T) {
 }
 `, map[string]string{"TestNamespace": ns.Name()})
 
-	retry.UntilSuccessOrFail(t, func() error {
-		mxr.Report(t, map[string]interface{}{
-			"context.protocol":      "http",
-			"destination.uid":       "somesrvcname",
-			"destination.namespace": ns.Name(),
-			"response.time":         time.Now(),
-			"request.time":          time.Now(),
-			"destination.service":   "svc." + ns.Name(),
-			"origin.ip":             []byte{1, 2, 3, 4},
+			retry.UntilSuccessOrFail(t, func() error {
+				mxr.Report(t, map[string]interface{}{
+					"context.protocol":      "http",
+					"destination.uid":       "somesrvcname",
+					"destination.namespace": ns.Name(),
+					"response.time":         time.Now(),
+					"request.time":          time.Now(),
+					"destination.service":   "svc." + ns.Name(),
+					"origin.ip":             []byte{1, 2, 3, 4},
+				})
+
+				reports := be.GetReports(t)
+
+				if !policybackend.ContainsReportJSON(t, reports, expected) {
+					return fmt.Errorf("expected report not found in current reports: %v", reports)
+				}
+
+				return nil
+			}, retry.Delay(15*time.Second), retry.Timeout(60*time.Second))
 		})
-
-		reports := be.GetReports(t)
-
-		if !policybackend.ContainsReportJSON(t, reports, expected) {
-			return fmt.Errorf("expected report not found in current reports: %v", reports)
-		}
-
-		return nil
-	})
 }
 
 var testReportConfig = `
 apiVersion: "config.istio.io/v1alpha2"
-kind: metric
+kind: instance
 metadata:
   name: metric1
 spec:
-  value: "2"
-  dimensions:
-    destination_name: destination.uid | "unknown"
-    origin_ip: origin.ip | ip("4.5.6.7")
+  compiledTemplate: metric
+  params:
+    value: "2"
+    dimensions:
+      destination_name: destination.uid | "unknown"
+      origin_ip: origin.ip | ip("4.5.6.7")
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: rule
@@ -100,7 +107,7 @@ metadata:
   name: rule1
 spec:
   actions:
-  - handler: handler1.bypass
+  - handler: handler1
     instances:
-    - metric1.metric
+    - metric1
 `

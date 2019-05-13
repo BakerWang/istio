@@ -37,6 +37,7 @@ import (
 // cp $TOP/out/linux_amd64/release/bootstrap/all/envoy-rev0.json pkg/bootstrap/testdata/all_golden.json
 // cp $TOP/out/linux_amd64/release/bootstrap/auth/envoy-rev0.json pkg/bootstrap/testdata/auth_golden.json
 // cp $TOP/out/linux_amd64/release/bootstrap/default/envoy-rev0.json pkg/bootstrap/testdata/default_golden.json
+// cp $TOP/out/linux_amd64/release/bootstrap/tracing_datadog/envoy-rev0.json pkg/bootstrap/testdata/tracing_datadog_golden.json
 // cp $TOP/out/linux_amd64/release/bootstrap/tracing_lightstep/envoy-rev0.json pkg/bootstrap/testdata/tracing_lightstep_golden.json
 // cp $TOP/out/linux_amd64/release/bootstrap/tracing_zipkin/envoy-rev0.json pkg/bootstrap/testdata/tracing_zipkin_golden.json
 func TestGolden(t *testing.T) {
@@ -73,13 +74,16 @@ func TestGolden(t *testing.T) {
 			base: "tracing_zipkin",
 		},
 		{
+			base: "tracing_datadog",
+		},
+		{
 			// Specify zipkin/statsd address, similar with the default config in v1 tests
 			base: "all",
 		},
 		{
 			base: "stats_inclusion",
 			annotations: map[string]string{
-				"sidecar.istio.io/v1alpha1/statsInclusionPrefixes": "cluster_manager,cluster.xds-grpc,listener.",
+				"sidecar.istio.io/statsInclusionPrefixes": "cluster_manager,cluster.xds-grpc,listener.",
 			},
 		},
 	}
@@ -103,7 +107,7 @@ func TestGolden(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			real, err := ioutil.ReadFile(fn)
+			read, err := ioutil.ReadFile(fn)
 			if err != nil {
 				t.Error("Error reading generated file ", err)
 				return
@@ -111,13 +115,13 @@ func TestGolden(t *testing.T) {
 
 			// apply minor modifications for the generated file so that tests are consistent
 			// across different env setups
-			err = ioutil.WriteFile(fn, correctForEnvDifference(real), 0700)
+			err = ioutil.WriteFile(fn, correctForEnvDifference(read), 0700)
 			if err != nil {
 				t.Error("Error modifying generated file ", err)
 				return
 			}
 			// re-read generated file with the changes having been made
-			real, err = ioutil.ReadFile(fn)
+			read, err = ioutil.ReadFile(fn)
 			if err != nil {
 				t.Error("Error reading generated file ", err)
 				return
@@ -145,14 +149,14 @@ func TestGolden(t *testing.T) {
 				t.Fatalf("invalid golder: %v", err)
 			}
 
-			jreal, err := yaml.YAMLToJSON(real)
+			jreal, err := yaml.YAMLToJSON(read)
 
 			if err != nil {
 				t.Fatalf("unable to convert: %v", err)
 			}
 
 			if err = jsonpb.UnmarshalString(string(jreal), &realM); err != nil {
-				t.Fatalf("invalid json %v\n%s", err, string(real))
+				t.Fatalf("invalid json %v\n%s", err, string(read))
 			}
 
 			if !reflect.DeepEqual(realM, goldenM) {
@@ -231,7 +235,7 @@ func loadProxyConfig(base, out string, _ *testing.T) (*meshconfig.ProxyConfig, e
 	if gobase == "" {
 		gobase = "../.."
 	}
-	cfg.CustomConfigFile = gobase + "/tools/deb/envoy_bootstrap_v2.json"
+	cfg.CustomConfigFile = gobase + "/tools/packaging/common/envoy_bootstrap_v2.json"
 	return cfg, nil
 }
 
@@ -324,6 +328,36 @@ func TestStoreHostPort(t *testing.T) {
 	}
 }
 
+func TestIsIPv6Proxy(t *testing.T) {
+	tests := []struct {
+		name     string
+		addrs    []string
+		expected bool
+	}{
+		{
+			name:     "ipv4 only",
+			addrs:    []string{"1.1.1.1", "127.0.0.1", "2.2.2.2"},
+			expected: false,
+		},
+		{
+			name:     "ipv6 only",
+			addrs:    []string{"1111:2222::1", "::1", "2222:3333::1"},
+			expected: true,
+		},
+		{
+			name:     "mixed ipv4 and ipv6",
+			addrs:    []string{"1111:2222::1", "::1", "127.0.0.1", "2.2.2.2", "2222:3333::1"},
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		result := isIPv6Proxy(tt.addrs)
+		if result != tt.expected {
+			t.Errorf("Test %s failed, expected: %t got: %t", tt.name, tt.expected, result)
+		}
+	}
+}
+
 type encodeFn func(string) string
 
 func envEncode(m map[string]string, prefix string, encode encodeFn, out []string) []string {
@@ -395,7 +429,29 @@ func TestNodeMetadata(t *testing.T) {
 	if !reflect.DeepEqual(nm, merged) {
 		t.Fatalf("Maps are not equal.\ngot: %v\nwant: %v", nm, merged)
 	}
+}
 
+func TestNodeMetadataEncodeEnvWithIstioMetaPrefix(t *testing.T) {
+	originalKey := "foo"
+	notIstioMetaKey := "NOT_AN_" + IstioMetaPrefix + originalKey
+	anIstioMetaKey := IstioMetaPrefix + originalKey
+	envs := []string{
+		notIstioMetaKey + "=bar",
+		anIstioMetaKey + "=baz",
+	}
+	nm := getNodeMetaData(envs)
+	if _, ok := nm[notIstioMetaKey]; ok {
+		t.Fatalf("%s should not be encoded in node metadata", notIstioMetaKey)
+	}
+
+	if _, ok := nm[anIstioMetaKey]; ok {
+		t.Fatalf("%s should not be encoded in node metadata. The prefix '%s' should be stripped", anIstioMetaKey, IstioMetaPrefix)
+	}
+	if val, ok := nm[originalKey]; !ok {
+		t.Fatalf("%s has the prefix %s and it should be encoded in the node metadata", originalKey, IstioMetaPrefix)
+	} else if val != "baz" {
+		t.Fatalf("unexpected value node metadata %s. got %s, want: %s", originalKey, val, "baz")
+	}
 }
 
 func mergeMap(to map[string]string, from map[string]string) {

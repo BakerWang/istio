@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kubeyaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"istio.io/common/pkg/log"
 	"istio.io/istio/pilot/pkg/model"
-	"istio.io/istio/pkg/log"
 )
 
 // ConvertObject converts an IstioObject k8s-style object to the
@@ -130,7 +130,7 @@ func KebabCaseToCamelCase(s string) string {
 		words := strings.Split(s, "-")
 		out := ""
 		for _, word := range words {
-			out = out + strings.Title(word)
+			out += strings.Title(word)
 		}
 		return out
 	}

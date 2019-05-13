@@ -18,13 +18,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	gotemplate "text/template"
 
 	"github.com/spf13/cobra"
 
+	"istio.io/common/pkg/env"
 	"istio.io/istio/mixer/cmd/shared"
 	"istio.io/istio/mixer/pkg/runtime/config/constant"
 )
@@ -81,7 +81,7 @@ spec:
 		fatalf("template in invalid: %v", err)
 	}
 
-	goPath := os.Getenv("GOPATH")
+	goPath := env.RegisterStringVar("GOPATH", "", "").Get()
 	tmplObj := &templateCRVar{
 		Name:       name,
 		Namespace:  ns,

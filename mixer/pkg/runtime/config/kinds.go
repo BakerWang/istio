@@ -19,10 +19,10 @@ import (
 
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	configpb "istio.io/api/policy/v1beta1"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/mixer/pkg/runtime/config/constant"
 	"istio.io/istio/mixer/pkg/template"
-	"istio.io/istio/pkg/log"
 )
 
 // KindMap generates a map from object kind to its proto message.
@@ -55,12 +55,12 @@ func KindMap(adapterInfo map[string]*adapter.Info, templateInfo map[string]*temp
 
 // CriticalKinds returns kinds which are critical for mixer's function and have to be ready for mixer config watch.
 func CriticalKinds() []string {
-	ck := make([]string, 0, 6)
-	ck = append(ck, constant.RulesKind)
-	ck = append(ck, constant.AttributeManifestKind)
-	ck = append(ck, constant.AdapterKind)
-	ck = append(ck, constant.TemplateKind)
-	ck = append(ck, constant.InstanceKind)
-	ck = append(ck, constant.HandlerKind)
-	return ck
+	return []string{
+		constant.RulesKind,
+		constant.AttributeManifestKind,
+		constant.AdapterKind,
+		constant.TemplateKind,
+		constant.InstanceKind,
+		constant.HandlerKind,
+	}
 }

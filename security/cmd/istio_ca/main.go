@@ -21,18 +21,18 @@ import (
 	"strings"
 	"time"
 
-	"istio.io/istio/pkg/spiffe"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"istio.io/istio/pkg/collateral"
-	"istio.io/istio/pkg/ctrlz"
+	"istio.io/common/pkg/collateral"
+	"istio.io/common/pkg/ctrlz"
+	"istio.io/common/pkg/env"
+	"istio.io/common/pkg/log"
+	"istio.io/common/pkg/probe"
+	"istio.io/common/pkg/version"
 	kubelib "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/log"
-	"istio.io/istio/pkg/probe"
-	"istio.io/istio/pkg/version"
+	"istio.io/istio/pkg/spiffe"
 	"istio.io/istio/security/pkg/caclient"
 	"istio.io/istio/security/pkg/cmd"
 	"istio.io/istio/security/pkg/k8s/controller"
@@ -45,7 +45,8 @@ import (
 )
 
 type cliOptions struct { // nolint: maligned
-	listenedNamespace       string
+	// Comma separated string containing all listened namespaces
+	listenedNamespaces      string
 	istioCaStorageNamespace string
 	kubeConfigFile          string
 	readSigningCertOnly     bool
@@ -57,6 +58,9 @@ type cliOptions struct { // nolint: maligned
 
 	selfSignedCA        bool
 	selfSignedCACertTTL time.Duration
+
+	// if set, namespaces require explicit labeling to have Citadel generate secrets.
+	explicitOptInRequired bool
 
 	workloadCertTTL    time.Duration
 	maxWorkloadCertTTL time.Duration
@@ -74,6 +78,8 @@ type cliOptions struct { // nolint: maligned
 
 	// Whether the CA signs certificates for other CAs.
 	signCACerts bool
+	// Whether to generate PKCS#8 private keys.
+	pkcs8Keys bool
 
 	cAClientConfig caclient.Config
 
@@ -143,11 +149,19 @@ func fatalf(template string, args ...interface{}) {
 func init() {
 	flags := rootCmd.Flags()
 	// General configuration.
-	flags.StringVar(&opts.listenedNamespace, "listened-namespace", "",
-		"Select a namespace for the CA to listen to. If unspecified, Citadel tries to use the ${"+
+	flags.StringVar(&opts.listenedNamespaces, "listened-namespace", "", "deprecated")
+	if err := flags.MarkDeprecated("listened-namespace", "please use --listened-namespaces instead"); err != nil {
+		panic(err)
+	}
+
+	flags.StringVar(&opts.listenedNamespaces, "listened-namespaces", "",
+		"Select the namespaces for the Citadel to listen to, separated by comma. If unspecified, Citadel tries to use the ${"+
 			cmd.ListenedNamespaceKey+"} environment variable. If neither is set, Citadel listens to all namespaces.")
 	flags.StringVar(&opts.istioCaStorageNamespace, "citadel-storage-namespace", "istio-system", "Namespace where "+
 		"the Citadel pod is running. Will not be used if explicit file or other storage mechanism is specified.")
+	flags.BoolVar(&opts.explicitOptInRequired, "explicit-opt-in", false, "Specifies whether Citadel requires "+
+		"explicit opt-in for creating secrets. If set, only namespaces labeled with 'istio-managed=enabled' will "+
+		"have secrets created. This feature is only available in key and certificates delivered through secret volume mount.")
 
 	flags.StringVar(&opts.kubeConfigFile, "kube-config", "",
 		"Specifies path to kubeconfig file. This must be specified when not running inside a Kubernetes pod.")
@@ -200,6 +214,7 @@ func init() {
 		"the Kubernetes secrets.")
 
 	flags.BoolVar(&opts.signCACerts, "sign-ca-certs", false, "Whether Citadel signs certificates for other CAs.")
+	flags.BoolVar(&opts.pkcs8Keys, "pkcs8-keys", false, "Whether to generate PKCS#8 private keys.")
 
 	// Monitoring configuration
 	flags.IntVar(&opts.monitoringPort, "monitoring-port", 15014, "The port number for monitoring Citadel. "+
@@ -251,6 +266,10 @@ func fqdn() string {
 	return fmt.Sprintf("istio-citadel.%v.svc.cluster.local", opts.istioCaStorageNamespace)
 }
 
+var (
+	listenedNamespaceKeyVar = env.RegisterStringVar(cmd.ListenedNamespaceKey, "", "")
+)
+
 func runCA() {
 	if err := log.Configure(opts.loggingOptions); err != nil {
 		fatalf("Failed to configure logging (%v)", err)
@@ -258,14 +277,16 @@ func runCA() {
 
 	_, _ = ctrlz.Run(opts.ctrlzOptions, nil)
 
-	if value, exists := os.LookupEnv(cmd.ListenedNamespaceKey); exists {
+	if value, exists := listenedNamespaceKeyVar.Lookup(); exists {
 		// When -namespace is not set, try to read the namespace from environment variable.
-		if opts.listenedNamespace == "" {
-			opts.listenedNamespace = value
+		if opts.listenedNamespaces == "" {
+			opts.listenedNamespaces = value
 		}
 		// Use environment variable for istioCaStorageNamespace if it exists
 		opts.istioCaStorageNamespace = value
 	}
+
+	listenedNamespaces := strings.Split(opts.listenedNamespaces, ",")
 
 	verifyCommandLineOptions()
 
@@ -285,10 +306,10 @@ func runCA() {
 	if !opts.serverOnly {
 		log.Infof("Creating Kubernetes controller to write issued keys and certs into secret ...")
 		// For workloads in K8s, we apply the configured workload cert TTL.
-		sc, err := controller.NewSecretController(ca,
+		sc, err := controller.NewSecretController(ca, opts.explicitOptInRequired,
 			opts.workloadCertTTL,
 			opts.workloadCertGracePeriodRatio, opts.workloadCertMinGracePeriod, opts.dualUse,
-			cs.CoreV1(), opts.signCACerts, opts.listenedNamespace, webhooks, opts.rootCertFile)
+			cs.CoreV1(), opts.signCACerts, opts.pkcs8Keys, listenedNamespaces, webhooks)
 		if err != nil {
 			fatalf("Failed to create secret controller: %v", err)
 		}
@@ -314,11 +335,11 @@ func runCA() {
 
 		// monitor service objects with "alpha.istio.io/kubernetes-serviceaccounts" and
 		// "alpha.istio.io/canonical-serviceaccounts" annotations
-		serviceController := kube.NewServiceController(cs.CoreV1(), opts.listenedNamespace, reg)
+		serviceController := kube.NewServiceController(cs.CoreV1(), listenedNamespaces, reg)
 		serviceController.Run(ch)
 
 		// monitor service account objects for istio mesh expansion
-		serviceAccountController := kube.NewServiceAccountController(cs.CoreV1(), opts.listenedNamespace, reg)
+		serviceAccountController := kube.NewServiceAccountController(cs.CoreV1(), listenedNamespaces, reg)
 		serviceAccountController.Run(ch)
 
 		// The CA API uses cert with the max workload cert TTL.

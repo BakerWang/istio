@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"istio.io/common/pkg/log"
+	"istio.io/common/pkg/probe"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/mixer/pkg/config/store"
 	"istio.io/istio/mixer/pkg/pool"
@@ -27,8 +29,6 @@ import (
 	"istio.io/istio/mixer/pkg/runtime/handler"
 	"istio.io/istio/mixer/pkg/runtime/routing"
 	"istio.io/istio/mixer/pkg/template"
-	"istio.io/istio/pkg/log"
-	"istio.io/istio/pkg/probe"
 )
 
 var errNotListening = errors.New("runtime is not listening to the store")
@@ -106,9 +106,7 @@ func (c *Runtime) StartListening() error {
 		return errors.New("already listening")
 	}
 
-	kinds := config.KindMap(c.snapshot.Adapters, c.snapshot.Templates)
-
-	data, watchChan, err := store.StartWatch(c.store, kinds)
+	data, watchChan, err := store.StartWatch(c.store)
 	if err != nil {
 		return err
 	}
@@ -150,7 +148,11 @@ func (c *Runtime) onConfigChange(events []*store.Event) {
 }
 
 func (c *Runtime) processNewConfig() {
-	newSnapshot, _ := c.ephemeral.BuildSnapshot()
+	newSnapshot, err := c.ephemeral.BuildSnapshot()
+	log.Infof("Built new config.Snapshot: id='%d'", newSnapshot.ID)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 	oldHandlers := c.handlers
 

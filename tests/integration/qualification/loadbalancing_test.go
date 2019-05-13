@@ -25,12 +25,13 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/pkg/test/framework"
 	"istio.io/istio/pkg/test/framework/components/bookinfo"
 	"istio.io/istio/pkg/test/framework/components/environment"
 	"istio.io/istio/pkg/test/framework/components/galley"
 	"istio.io/istio/pkg/test/framework/components/ingress"
+	"istio.io/istio/pkg/test/framework/components/namespace"
 	"istio.io/istio/pkg/test/framework/components/prometheus"
 )
 
@@ -55,18 +56,28 @@ const (
 // --istio.test.kube.config=<path>
 func TestIngressLoadBalancing(t *testing.T) {
 	ctx := framework.NewContext(t)
-	defer ctx.Done(t)
+	defer ctx.Done()
 
-	ctx.RequireOrSkip(t, environment.Kube)
+	ctx.RequireOrSkip(environment.Kube)
 
 	g := galley.NewOrFail(t, ctx, galley.Config{})
 
-	d := bookinfo.DeployOrFail(t, ctx, bookinfo.BookInfo)
-	g.ApplyConfigOrFail(t,
+	bookinfoNs, err := namespace.New(ctx, "istio-bookinfo", true)
+	if err != nil {
+		t.Fatalf("Could not create istio-bookinfo Namespace; err:%v", err)
+	}
+	d := bookinfo.DeployOrFail(t, ctx, bookinfo.Config{Namespace: bookinfoNs, Cfg: bookinfo.BookInfo})
+
+	g.ApplyConfigOrFail(
+		t,
 		d.Namespace(),
-		bookinfo.NetworkingBookinfoGateway.LoadOrFail(t),
-		bookinfo.NetworkingDestinationRuleAll.LoadOrFail(t),
-		bookinfo.NetworkingVirtualServiceAllV1.LoadOrFail(t))
+		bookinfo.NetworkingBookinfoGateway.LoadGatewayFileWithNamespaceOrFail(t, bookinfoNs.Name()))
+	g.ApplyConfigOrFail(
+		t,
+		d.Namespace(),
+		bookinfo.GetDestinationRuleConfigFile(t, ctx).LoadWithNamespaceOrFail(t, bookinfoNs.Name()),
+		bookinfo.NetworkingVirtualServiceAllV1.LoadWithNamespaceOrFail(t, bookinfoNs.Name()),
+	)
 
 	prom := prometheus.NewOrFail(t, ctx)
 	ing := ingress.NewOrFail(t, ctx, ingress.Config{Istio: ist})
@@ -187,7 +198,6 @@ func logProgress(duration time.Duration, wg *sync.WaitGroup) {
 		case tnow := <-ticker.C:
 			timeRemaining := end.Sub(tnow)
 			logTimeRemaining(timeRemaining)
-		default:
 		}
 	}
 }

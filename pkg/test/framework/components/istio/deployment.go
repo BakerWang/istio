@@ -25,6 +25,7 @@ import (
 	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/test/env"
 	"istio.io/istio/pkg/test/helm"
+	"istio.io/istio/pkg/test/util/file"
 )
 
 const (
@@ -50,12 +51,7 @@ func generateIstioYaml(helmDir string, cfg Config) (string, error) {
 	// TODO: This is Istio deployment specific. We may need to remove/reconcile this as a parameter
 	// when we support Helm deployment of non-Istio artifacts.
 	namespaceData := fmt.Sprintf(namespaceTemplate, cfg.SystemNamespace)
-	crdsData, err := getCrdsYamlFiles(cfg.CrdsFilesDir)
-	if err != nil {
-		return "", err
-	}
-
-	generatedYaml = test.JoinConfigs(namespaceData, crdsData, generatedYaml)
+	generatedYaml = test.JoinConfigs(namespaceData, generatedYaml)
 
 	return generatedYaml, nil
 }
@@ -80,10 +76,8 @@ func splitIstioYaml(istioYaml string) (string, string) {
 
 	parts := strings.Split(istioYaml, yamlSeparator)
 
-	r, err := regexp.Compile("apiVersion: *.*istio\\.io.*")
-	if err != nil {
-		panic(err)
-	}
+	// Make the regular expression multi-line and anchor to the beginning of the line.
+	r := regexp.MustCompile(`(?m)^apiVersion: *.*istio\.io.*`)
 
 	for _, p := range parts {
 		if r.Match([]byte(p)) {
@@ -102,7 +96,7 @@ func splitIstioYaml(istioYaml string) (string, string) {
 	return installYaml, configureYaml
 }
 
-func getCrdsYamlFiles(crdFilesDir string) (string, error) {
+func generateCRDYaml(crdFilesDir string) (string, error) {
 
 	// Note: When adding a CRD to the install, a new CRDFile* constant is needed
 	// This slice contains the list of CRD files installed during testing
@@ -122,7 +116,7 @@ func getCrdsYamlFiles(crdFilesDir string) (string, error) {
 	// Get Joined Crds Yaml file
 	prevContent := ""
 	for _, yamlFileName := range crdFiles {
-		content, err := test.ReadConfigFile(path.Join(crdFilesDir, yamlFileName))
+		content, err := file.AsString(path.Join(crdFilesDir, yamlFileName))
 		if err != nil {
 			return "", err
 		}

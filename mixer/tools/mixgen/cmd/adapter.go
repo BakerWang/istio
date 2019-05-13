@@ -29,6 +29,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/spf13/cobra"
 
+	"istio.io/common/pkg/env"
 	"istio.io/istio/mixer/cmd/shared"
 	"istio.io/istio/mixer/pkg/runtime/config/constant"
 )
@@ -111,7 +112,7 @@ spec:
 		}
 	}
 
-	goPath := os.Getenv("GOPATH")
+	goPath := env.RegisterStringVar("GOPATH", "", "").Get()
 	adapterObj := &adapterCRVar{
 		RawCommand:   strings.Replace(rawCommand, goPath, "$GOPATH", -1),
 		Name:         name,

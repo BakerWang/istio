@@ -27,12 +27,11 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	"fortio.org/fortio/fhttp"
 	"fortio.org/fortio/periodic"
-	"golang.org/x/oauth2/google"
 	cloudtrace "google.golang.org/api/cloudtrace/v1"
 	"google.golang.org/api/iterator"
 	monitoring "google.golang.org/api/monitoring/v3"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/common/pkg/log"
 	"istio.io/istio/tests/e2e/framework"
 	"istio.io/istio/tests/util"
 )
@@ -120,7 +119,7 @@ func getGCloudProjectID() string {
 	if err != nil {
 		return ""
 	}
-	re, _ := regexp.Compile(".*project = (.*?)\n.*")
+	re := regexp.MustCompile(".*project = (.*?)\n.*")
 	match := re.FindStringSubmatch(output)
 	if len(match) < 1 {
 		return ""
@@ -152,11 +151,7 @@ func TestContextGraph(t *testing.T) {
 }
 
 func createMetricsService(ctx context.Context) (*monitoring.Service, error) {
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringReadScope)
-	if err != nil {
-		return nil, err
-	}
-	s, err := monitoring.New(hc)
+	s, err := monitoring.NewService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -232,11 +227,7 @@ func TestLogs(t *testing.T) {
 }
 
 func createTraceService(ctx context.Context) (*cloudtrace.Service, error) {
-	hc, err := google.DefaultClient(ctx, cloudtrace.TraceReadonlyScope)
-	if err != nil {
-		return nil, err
-	}
-	s, err := cloudtrace.New(hc)
+	s, err := cloudtrace.NewService(ctx)
 	if err != nil {
 		return nil, err
 	}
