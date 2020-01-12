@@ -41,8 +41,7 @@ const (
 		"QemGyf2UB6QsuZLH+JFEZnzU859qURnNIITa1Wf4YUtka5Sp1kDnEll3\\\\nwj4IlXKU+Wl1CzxJyn4SSQAXy/" +
 		"Lb08ZKrF/YSzcIISnRX5j+wa8ApOSwwA/B7iaT\\\\nTWz1g+RlV9qHap70eIjPsQvb\\\\n-----END CERTIFICATE-----"
 
-	vaultAddr      = "https://34.83.129.211:8200"
-	excludeIPRange = "34.83.129.211/32"
+	vaultAddr = "https://34.83.129.211:8200"
 )
 
 var (
@@ -56,6 +55,9 @@ func TestMain(m *testing.M) {
 	// with the certificates issued by the SDS Vault CA flow.
 	framework.NewSuite("sds_vault_flow_test", m).
 		Label(label.CustomSetup).
+		Skip("https://github.com/istio/istio/issues/17572").
+		// SDS requires Kubernetes 1.13
+		RequireEnvironmentVersion("1.13").
 		SetupOnEnv(environment.Kube, istio.Setup(&inst, setupConfig)).
 		Setup(func(ctx resource.Context) (err error) {
 			if g, err = galley.New(ctx, galley.Config{}); err != nil {
@@ -80,7 +82,6 @@ func setupConfig(cfg *istio.Config) {
 	cfg.Values["global.mtls.enabled"] = "true"
 	cfg.Values["global.sds.enabled"] = "true"
 	cfg.Values["global.sds.udsPath"] = "unix:/var/run/sds/uds_path"
-	cfg.Values["global.sds.useNormalJwt"] = "true"
 	cfg.Values["global.sds.customTokenDirectory"] = "/etc/sdstoken"
 	cfg.Values["nodeagent.enabled"] = "true"
 	cfg.Values["nodeagent.image"] = "node-agent-k8s"
@@ -92,5 +93,4 @@ func setupConfig(cfg *istio.Config) {
 	cfg.Values["nodeagent.env.VAULT_ROLE"] = "istio-cert"
 	cfg.Values["nodeagent.env.VAULT_SIGN_CSR_PATH"] = "istio_ca/sign/istio-pki-role"
 	cfg.Values["nodeagent.env.VAULT_TLS_ROOT_CERT"] = tlsRootCert
-	cfg.Values["global.proxy.excludeIPRanges"] = excludeIPRange
 }

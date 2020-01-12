@@ -26,12 +26,12 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/pkg/test/echo/common"
 	"istio.io/istio/pkg/test/echo/common/response"
 	"istio.io/istio/pkg/test/echo/proto"
 	"istio.io/istio/pkg/test/echo/server/forwarder"
 	"istio.io/istio/pkg/test/util/retry"
+	"istio.io/pkg/log"
 )
 
 var _ Instance = &grpcInstance{}
@@ -122,18 +122,24 @@ type grpcHandler struct {
 }
 
 func (h *grpcHandler) Echo(ctx context.Context, req *proto.EchoRequest) (*proto.EchoResponse, error) {
+	host := "-"
 	body := bytes.Buffer{}
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
 		for key, values := range md {
 			field := response.Field(key)
 			if key == ":authority" {
 				field = response.HostField
+				host = values[0]
 			}
 			for _, value := range values {
 				writeField(&body, field, value)
 			}
 		}
 	}
+
+	log.Infof("GRPC Request:\n  Host: %s\n  Message: %s\n  Headers: %v\n", host, req.GetMessage(), md)
+
 	portNumber := 0
 	if h.Port != nil {
 		portNumber = h.Port.Port

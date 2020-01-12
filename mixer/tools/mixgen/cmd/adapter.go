@@ -29,9 +29,9 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/spf13/cobra"
 
-	"istio.io/common/pkg/env"
 	"istio.io/istio/mixer/cmd/shared"
 	"istio.io/istio/mixer/pkg/runtime/config/constant"
+	"istio.io/pkg/env"
 )
 
 func adapterCfgCmd(rawArgs []string, printf, fatalf shared.FormatFn) *cobra.Command {
@@ -112,9 +112,9 @@ spec:
 		}
 	}
 
-	goPath := env.RegisterStringVar("GOPATH", "", "").Get()
+	repoRoot := env.RegisterStringVar("REPO_ROOT", "", "Absolute path to the base of the source repository.").Get()
 	adapterObj := &adapterCRVar{
-		RawCommand:   strings.Replace(rawCommand, goPath, "$GOPATH", -1),
+		RawCommand:   strings.Replace(rawCommand, repoRoot, "$REPO_ROOT", -1),
 		Name:         name,
 		Namespace:    namespace,
 		Description:  description,

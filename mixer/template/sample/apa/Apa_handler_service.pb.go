@@ -15,10 +15,13 @@ import (
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	_ "istio.io/api/mixer/adapter/model/v1beta1"
 	v1beta1 "istio.io/api/policy/v1beta1"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -32,7 +35,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Request message for HandleMyApa method.
 type HandleMyApaRequest struct {
@@ -58,16 +61,12 @@ func (m *HandleMyApaRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HandleMyApaRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HandleMyApaRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HandleMyApaRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HandleMyApaRequest.Merge(m, src)
@@ -103,16 +102,12 @@ func (m *OutputMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *OutputMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OutputMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *OutputMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_OutputMsg.Merge(m, src)
@@ -152,16 +147,12 @@ func (m *InstanceMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceMsg.Merge(m, src)
@@ -190,16 +181,12 @@ func (m *Resource1Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource1Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource1Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource1Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource1Msg.Merge(m, src)
@@ -228,16 +215,12 @@ func (m *Resource2Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource2Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource2Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource2Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource2Msg.Merge(m, src)
@@ -271,16 +254,12 @@ func (m *Resource3Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource3Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource3Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource3Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource3Msg.Merge(m, src)
@@ -309,16 +288,12 @@ func (m *Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Type.Merge(m, src)
@@ -346,16 +321,12 @@ func (m *Resource1Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource1Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource1Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource1Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource1Type.Merge(m, src)
@@ -383,16 +354,12 @@ func (m *Resource2Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource2Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource2Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource2Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource2Type.Merge(m, src)
@@ -419,16 +386,12 @@ func (m *Resource3Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource3Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource3Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource3Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource3Type.Merge(m, src)
@@ -471,16 +434,12 @@ func (m *InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceParam.Merge(m, src)
@@ -509,16 +468,12 @@ func (m *Resource1InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource1InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource1InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource1InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource1InstanceParam.Merge(m, src)
@@ -547,16 +502,12 @@ func (m *Resource2InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource2InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource2InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource2InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource2InstanceParam.Merge(m, src)
@@ -590,16 +541,12 @@ func (m *Resource3InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Resource3InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Resource3InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Resource3InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Resource3InstanceParam.Merge(m, src)
@@ -647,86 +594,86 @@ func init() {
 }
 
 var fileDescriptor_591b9af990ae8f50 = []byte{
-	// 1250 bytes of a gzipped FileDescriptorProto
+	// 1253 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4b, 0x6c, 0x1b, 0x45,
 	0x18, 0xf6, 0xda, 0x4e, 0xe2, 0x1d, 0x37, 0x6d, 0x19, 0x85, 0x6a, 0x6b, 0xa1, 0x25, 0x32, 0x08,
-	0x45, 0x02, 0xd6, 0x8a, 0x5d, 0x55, 0x51, 0x1a, 0x84, 0x92, 0x26, 0x55, 0x2d, 0x91, 0x92, 0x4e,
+	0x45, 0x02, 0xd6, 0x8a, 0x5d, 0x55, 0x55, 0x1a, 0x84, 0x92, 0x26, 0x55, 0x2d, 0x91, 0x92, 0x4e,
 	0x4a, 0x2b, 0xa1, 0x4a, 0x66, 0x9c, 0x9d, 0x98, 0xa1, 0xfb, 0x62, 0x67, 0x36, 0x8a, 0x6f, 0x88,
 	0x03, 0x67, 0xa4, 0x9e, 0x68, 0x4f, 0x48, 0x1c, 0x7a, 0x2b, 0x07, 0x24, 0x2e, 0x88, 0x0b, 0x97,
-	0x8a, 0x53, 0xc4, 0xa9, 0x07, 0x90, 0x88, 0xd3, 0x03, 0xa7, 0xaa, 0x47, 0x8e, 0x68, 0x66, 0xfd,
+	0x8a, 0x53, 0xc4, 0x29, 0x07, 0x90, 0x88, 0xd3, 0x03, 0xa7, 0xaa, 0x47, 0x8e, 0x68, 0x66, 0xfd,
 	0xd8, 0xb5, 0x9d, 0xda, 0x1b, 0x5a, 0x42, 0x0e, 0x91, 0x3c, 0x33, 0xff, 0xf7, 0xbf, 0xff, 0x2f,
-	0xb3, 0x03, 0x2a, 0x36, 0xdd, 0x25, 0x7e, 0x89, 0x13, 0xdb, 0xb3, 0x30, 0x27, 0x25, 0x86, 0x6d,
-	0xcf, 0x22, 0x25, 0xec, 0xe1, 0xd2, 0xb2, 0x87, 0x6b, 0x9f, 0x62, 0xc7, 0xb4, 0x88, 0x5f, 0x63,
-	0xc4, 0xdf, 0xa1, 0x5b, 0xc4, 0xf0, 0x7c, 0x97, 0xbb, 0x70, 0x96, 0x32, 0x4e, 0x5d, 0x43, 0x42,
+	0xb3, 0x03, 0x2a, 0x36, 0xdd, 0x21, 0x7e, 0x89, 0x13, 0xdb, 0xb3, 0x30, 0x27, 0x25, 0x86, 0x6d,
+	0xcf, 0x22, 0x25, 0xec, 0xe1, 0xd2, 0x92, 0x87, 0x6b, 0x9f, 0x62, 0xc7, 0xb4, 0x88, 0x5f, 0x63,
+	0xc4, 0xdf, 0xa6, 0x9b, 0xc4, 0xf0, 0x7c, 0x97, 0xbb, 0x70, 0x96, 0x32, 0x4e, 0x5d, 0x43, 0x42,
 	0x0d, 0x6c, 0x62, 0x8f, 0x13, 0xdf, 0x08, 0x91, 0x86, 0xdd, 0xc4, 0x1e, 0x2e, 0xcc, 0x34, 0xdc,
 	0x86, 0x2b, 0x85, 0x4b, 0xe2, 0x57, 0x88, 0x2b, 0xbc, 0x13, 0x1a, 0x6b, 0x23, 0x4a, 0xb6, 0x6b,
-	0x12, 0xab, 0xb4, 0x33, 0x5f, 0x27, 0x1c, 0xcf, 0x97, 0xc8, 0x2e, 0x27, 0x0e, 0xa3, 0xae, 0xc3,
-	0xda, 0xd2, 0xe7, 0x1b, 0xae, 0xdb, 0xb0, 0x48, 0x49, 0xae, 0xea, 0xc1, 0x76, 0x09, 0x3b, 0xcd,
-	0xce, 0x91, 0xe7, 0x5a, 0x74, 0xab, 0xd9, 0xc5, 0xf2, 0xa6, 0xd7, 0xf6, 0xad, 0xf8, 0xa3, 0x02,
-	0xe0, 0x55, 0xe9, 0xf5, 0x7a, 0x73, 0xd9, 0xc3, 0x88, 0x7c, 0x1e, 0x10, 0xc6, 0x61, 0x15, 0xe4,
-	0xa8, 0xc3, 0x38, 0x76, 0xb6, 0x88, 0xa6, 0xcc, 0x2a, 0x73, 0xf9, 0xf2, 0xbb, 0xc6, 0xa8, 0x28,
-	0x8c, 0x6a, 0x1b, 0xb1, 0xce, 0x1a, 0xa8, 0x0b, 0x87, 0x97, 0xc0, 0xe9, 0xb6, 0x74, 0x6d, 0xcb,
-	0x75, 0xb6, 0x69, 0x43, 0x4b, 0x4b, 0x85, 0x33, 0x46, 0xe8, 0xb0, 0xd1, 0x71, 0xd8, 0x58, 0x76,
-	0x9a, 0x68, 0xba, 0x2d, 0x7b, 0x59, 0x8a, 0xc2, 0xf3, 0x20, 0x67, 0x12, 0x33, 0xf0, 0x6a, 0xd4,
+	0x12, 0xab, 0xb4, 0x3d, 0x5f, 0x27, 0x1c, 0xcf, 0x97, 0xc8, 0x0e, 0x27, 0x0e, 0xa3, 0xae, 0xc3,
+	0xda, 0xd2, 0xe7, 0x1b, 0xae, 0xdb, 0xb0, 0x48, 0x49, 0xae, 0xea, 0xc1, 0x56, 0x09, 0x3b, 0xcd,
+	0xce, 0x91, 0xe7, 0x5a, 0x74, 0xb3, 0xd9, 0xc5, 0xf2, 0xa6, 0xd7, 0xf6, 0xad, 0xf8, 0xa3, 0x02,
+	0xe0, 0x35, 0xe9, 0xf5, 0x5a, 0x73, 0xc9, 0xc3, 0x88, 0x7c, 0x1e, 0x10, 0xc6, 0x61, 0x15, 0xe4,
+	0xa8, 0xc3, 0x38, 0x76, 0x36, 0x89, 0xa6, 0xcc, 0x2a, 0x73, 0xf9, 0xf2, 0xbb, 0xc6, 0xa8, 0x28,
+	0x8c, 0x6a, 0x1b, 0xb1, 0xc6, 0x1a, 0xa8, 0x0b, 0x87, 0x97, 0xc1, 0xe9, 0xb6, 0x74, 0x6d, 0xd3,
+	0x75, 0xb6, 0x68, 0x43, 0x4b, 0x4b, 0x85, 0x33, 0x46, 0xe8, 0xb0, 0xd1, 0x71, 0xd8, 0x58, 0x72,
+	0x9a, 0x68, 0xba, 0x2d, 0x7b, 0x45, 0x8a, 0xc2, 0xf3, 0x20, 0x67, 0x12, 0x33, 0xf0, 0x6a, 0xd4,
 	0xd4, 0x32, 0xb3, 0xca, 0x9c, 0x8a, 0xa6, 0xe4, 0xba, 0x6a, 0x16, 0x7f, 0xc8, 0x02, 0xf5, 0xc3,
-	0x80, 0x7b, 0x01, 0x5f, 0x67, 0x0d, 0xf8, 0x16, 0x38, 0x4d, 0x1d, 0x7e, 0xf1, 0xc2, 0x86, 0x4f,
-	0x6d, 0xca, 0xe9, 0x4e, 0xe8, 0x76, 0x06, 0xf5, 0xed, 0xc2, 0x37, 0xc1, 0x74, 0xdd, 0x75, 0xad,
+	0x80, 0x7b, 0x01, 0x5f, 0x63, 0x0d, 0xf8, 0x16, 0x38, 0x4d, 0x1d, 0x7e, 0xf1, 0xc2, 0xba, 0x4f,
+	0x6d, 0xca, 0xe9, 0x76, 0xe8, 0x76, 0x06, 0xf5, 0xed, 0xc2, 0x37, 0xc1, 0x74, 0xdd, 0x75, 0xad,
 	0x9e, 0x98, 0x70, 0x26, 0x87, 0xe2, 0x9b, 0x70, 0x0e, 0x9c, 0x31, 0xdd, 0xa0, 0x6e, 0x91, 0x9e,
 	0x9c, 0xb0, 0xae, 0xa0, 0xfe, 0x6d, 0x21, 0xc9, 0xb8, 0x4f, 0x9d, 0x46, 0x4f, 0x32, 0x2b, 0xfd,
-	0xec, 0xdf, 0x86, 0xef, 0x01, 0x95, 0x53, 0x9b, 0x6c, 0x72, 0x6c, 0x7b, 0xda, 0xa4, 0x4c, 0xc1,
-	0xeb, 0xed, 0x9c, 0x86, 0xe5, 0x31, 0xda, 0xe5, 0x31, 0x6e, 0x74, 0xc4, 0x50, 0x0f, 0x01, 0x17,
-	0x41, 0xce, 0x0c, 0x7c, 0xcc, 0xa9, 0xeb, 0x68, 0x53, 0x12, 0xad, 0x0f, 0x47, 0xaf, 0xb6, 0xa5,
-	0x50, 0x57, 0x1e, 0x2e, 0x80, 0x09, 0x62, 0x63, 0x6a, 0x69, 0x40, 0x02, 0x8b, 0xc3, 0x81, 0x6b,
-	0x42, 0x64, 0xd9, 0x34, 0x7d, 0xc2, 0x18, 0x0a, 0x01, 0xf0, 0x22, 0x98, 0x74, 0x03, 0x5e, 0xa3,
-	0x9e, 0x96, 0x7f, 0x9e, 0xc7, 0xd5, 0x8d, 0x2e, 0xce, 0x0d, 0x78, 0xd5, 0x83, 0x1f, 0x83, 0xbc,
-	0xc0, 0x31, 0xee, 0xd7, 0x6c, 0xec, 0x69, 0xa7, 0x66, 0x33, 0x73, 0xf9, 0xf2, 0xe2, 0xe8, 0x16,
-	0xea, 0x16, 0x54, 0xfc, 0xda, 0xe4, 0xfe, 0x3a, 0xf6, 0xd6, 0x1c, 0xee, 0x37, 0x91, 0xea, 0x76,
-	0xd6, 0x85, 0x25, 0x70, 0x3a, 0x7e, 0x08, 0xcf, 0x82, 0xcc, 0x1d, 0xd2, 0x94, 0x15, 0x57, 0x91,
-	0xf8, 0x09, 0x67, 0xc0, 0xc4, 0x0e, 0xb6, 0x82, 0xb0, 0xbc, 0x2a, 0x0a, 0x17, 0x8b, 0xe9, 0x05,
-	0xa5, 0xf8, 0x74, 0x12, 0xe4, 0x23, 0x8d, 0x0a, 0x5f, 0x05, 0x59, 0x07, 0xdb, 0x44, 0x7b, 0xf8,
-	0xeb, 0x4f, 0x45, 0x29, 0x2b, 0x97, 0x27, 0xa0, 0x9f, 0xbe, 0x51, 0x80, 0x6e, 0x52, 0xbb, 0x4d,
-	0x02, 0x57, 0xe8, 0x2e, 0x31, 0xab, 0xc2, 0xb7, 0x9b, 0x22, 0xd4, 0xd5, 0x1b, 0x4d, 0x8f, 0x68,
-	0x13, 0x32, 0xed, 0xd7, 0x13, 0x4d, 0xae, 0xb1, 0xfa, 0x5c, 0x9d, 0x61, 0x35, 0x46, 0x18, 0x3e,
-	0xce, 0x5e, 0xff, 0x08, 0xe4, 0x7c, 0xc2, 0x2a, 0xb2, 0xed, 0x72, 0xe3, 0xb6, 0x5d, 0x34, 0x7e,
-	0x44, 0x58, 0xa5, 0xdb, 0x76, 0x53, 0x7e, 0xb8, 0x82, 0xef, 0x03, 0xe0, 0x7a, 0xc2, 0x00, 0xb6,
-	0xaa, 0x1b, 0x9a, 0x3a, 0xde, 0x30, 0x44, 0x20, 0x47, 0x9f, 0xc1, 0xc2, 0x75, 0xf0, 0xc6, 0x18,
-	0x35, 0x19, 0x35, 0x04, 0x99, 0xc8, 0x10, 0x14, 0x3e, 0x03, 0xa7, 0xa2, 0x61, 0x0e, 0xc1, 0xae,
-	0x46, 0xb1, 0xf9, 0xb2, 0x31, 0x3a, 0x87, 0x88, 0x30, 0x37, 0xf0, 0xb7, 0x48, 0x45, 0xd0, 0x7f,
-	0x64, 0xe0, 0x7e, 0x56, 0xa4, 0x31, 0x79, 0x36, 0x2f, 0x26, 0xee, 0x2c, 0xc8, 0x30, 0xee, 0x77,
-	0x8c, 0x31, 0xee, 0x43, 0x04, 0xa6, 0x19, 0xb1, 0xb6, 0x6b, 0x3e, 0x11, 0x7f, 0x6c, 0x5e, 0x0e,
-	0x47, 0x22, 0xa3, 0x42, 0x31, 0xca, 0x0b, 0x25, 0x88, 0x6c, 0x23, 0xc2, 0xe6, 0xe1, 0x55, 0x20,
-	0x6a, 0x87, 0xc8, 0x76, 0x39, 0x79, 0x08, 0x65, 0xa1, 0xad, 0x03, 0x2f, 0x3e, 0x48, 0xf7, 0x02,
-	0x28, 0x0f, 0x0f, 0x60, 0x05, 0x64, 0x45, 0xa3, 0x1c, 0x31, 0x59, 0x12, 0x0b, 0x6f, 0x46, 0x1a,
-	0x37, 0x23, 0x1b, 0xf7, 0x52, 0x32, 0x8f, 0x87, 0x77, 0xee, 0x7f, 0x5a, 0xeb, 0xfb, 0xd9, 0x5e,
-	0xaa, 0x2a, 0x27, 0xe3, 0xdf, 0xf2, 0xbd, 0x71, 0x69, 0x14, 0x25, 0x4b, 0xcb, 0x09, 0xe7, 0xd1,
-	0x97, 0xc0, 0x3a, 0xc5, 0x5f, 0x14, 0x90, 0x95, 0x61, 0x5d, 0x1b, 0xe0, 0xe8, 0xca, 0xe8, 0xe4,
-	0x0a, 0xe4, 0x21, 0x2d, 0x7e, 0x67, 0x64, 0x8b, 0xaf, 0xc5, 0x5b, 0xbc, 0x94, 0xa0, 0x96, 0xc2,
-	0x6e, 0x34, 0x8a, 0x87, 0x0a, 0x98, 0xee, 0xd2, 0x8e, 0x0c, 0x67, 0x73, 0x38, 0x7d, 0x25, 0x30,
-	0x22, 0xf5, 0xc4, 0xf9, 0xab, 0xda, 0xcf, 0x5f, 0x09, 0xd4, 0x95, 0xa5, 0xba, 0x2e, 0x81, 0xdd,
-	0x4b, 0xf7, 0x3c, 0x96, 0x47, 0xf0, 0x72, 0x8c, 0xaf, 0x12, 0x67, 0x23, 0x24, 0xac, 0x5b, 0x03,
-	0x84, 0xb5, 0x94, 0xd0, 0xc5, 0xff, 0x43, 0x39, 0xcf, 0xf4, 0x72, 0x23, 0xcf, 0x8a, 0xdf, 0x4e,
-	0x81, 0xe9, 0xce, 0x7d, 0x60, 0x03, 0xfb, 0xd8, 0x3e, 0x84, 0xc4, 0xd4, 0xf1, 0x48, 0x4c, 0x1d,
-	0x93, 0xc4, 0xd4, 0x7f, 0x43, 0x62, 0xf7, 0xc7, 0x25, 0xb1, 0xcd, 0xf1, 0xef, 0x42, 0x32, 0xf6,
-	0x17, 0xc2, 0x62, 0xaf, 0xf5, 0xb3, 0x98, 0x1a, 0x25, 0xa9, 0x42, 0x1f, 0x49, 0xa9, 0x91, 0xcb,
-	0xdc, 0xad, 0x01, 0xa2, 0x58, 0x4a, 0x1a, 0xc0, 0xf0, 0xeb, 0x9c, 0x3e, 0x70, 0x9d, 0x53, 0x63,
-	0xb7, 0xb5, 0x99, 0xe8, 0x6d, 0x4d, 0xed, 0x7c, 0x0d, 0xed, 0x02, 0x88, 0x39, 0xf7, 0x69, 0x3d,
-	0xe0, 0xa4, 0x56, 0xa7, 0x8e, 0x49, 0x9d, 0x06, 0xd3, 0xbe, 0x17, 0x5f, 0x0e, 0xc2, 0xb7, 0x2b,
-	0x49, 0x7d, 0x5b, 0xee, 0x28, 0x5b, 0x69, 0xeb, 0x0a, 0xbd, 0x7c, 0x05, 0xf7, 0xef, 0xbf, 0x20,
-	0x36, 0x8e, 0x7e, 0x08, 0x15, 0xf8, 0xc8, 0x29, 0xbb, 0x16, 0x9f, 0xb2, 0x85, 0x04, 0x53, 0x16,
-	0x8b, 0x33, 0x6a, 0x75, 0x15, 0x9c, 0x1b, 0x1e, 0x75, 0xa2, 0x8f, 0xb8, 0xdf, 0x15, 0x70, 0xae,
-	0xcb, 0x9d, 0xf1, 0x61, 0x1d, 0xbc, 0x9c, 0xdd, 0x1e, 0x4e, 0xcf, 0x09, 0xc2, 0x89, 0x9b, 0x88,
-	0xf3, 0x34, 0xea, 0xe7, 0xe9, 0x04, 0x7a, 0xcb, 0x71, 0xbd, 0x5d, 0xc2, 0xde, 0x4b, 0xf7, 0xc2,
-	0x2b, 0x8f, 0x0a, 0xef, 0x83, 0x18, 0x97, 0x1f, 0xbd, 0x48, 0x21, 0xa9, 0x7f, 0x32, 0x40, 0xea,
-	0x6b, 0x47, 0x8d, 0xe7, 0x10, 0x76, 0x3f, 0x96, 0xbe, 0x2b, 0x3e, 0xcd, 0xf4, 0x52, 0x5a, 0x39,
-	0x69, 0xf4, 0xfe, 0xdd, 0xb8, 0xf4, 0x7e, 0xfb, 0xa8, 0xa9, 0x3a, 0x5e, 0x9e, 0x7f, 0x09, 0xf4,
-	0x56, 0xfe, 0x2a, 0xfe, 0xb0, 0xb9, 0x19, 0xbe, 0xc8, 0x42, 0x0f, 0xe4, 0x23, 0xbb, 0xf0, 0xc2,
-	0xe8, 0x84, 0x0d, 0xbe, 0x8e, 0x16, 0xde, 0x4e, 0xf0, 0x90, 0xb5, 0x52, 0x7d, 0xb4, 0xaf, 0xa7,
-	0xf6, 0xf6, 0xf5, 0xd4, 0xe3, 0x7d, 0x3d, 0xf5, 0x6c, 0x5f, 0x4f, 0x7d, 0xd1, 0xd2, 0x95, 0x07,
-	0x2d, 0x3d, 0xf5, 0xa8, 0xa5, 0x2b, 0x7b, 0x2d, 0x5d, 0xf9, 0xb3, 0xa5, 0x2b, 0x7f, 0xb5, 0xf4,
-	0xd4, 0xb3, 0x96, 0xae, 0x7c, 0x7d, 0xa0, 0xa7, 0xf6, 0x0e, 0xf4, 0xd4, 0xe3, 0x03, 0x3d, 0xf5,
-	0xf7, 0x6f, 0x4f, 0xee, 0xa6, 0x33, 0x5f, 0xfe, 0xf1, 0xe4, 0x6e, 0x7a, 0x42, 0x2a, 0xad, 0x4f,
-	0xca, 0xa7, 0xd2, 0xca, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc3, 0x98, 0x54, 0xe2, 0x86, 0x16,
-	0x00, 0x00,
+	0xec, 0xdf, 0x86, 0xef, 0x01, 0x95, 0x53, 0x9b, 0x6c, 0x70, 0x6c, 0x7b, 0xda, 0xa4, 0x4c, 0xc1,
+	0xeb, 0xed, 0x9c, 0x86, 0xe5, 0x31, 0xda, 0xe5, 0x31, 0x6e, 0x76, 0xc4, 0x50, 0x0f, 0x01, 0x17,
+	0x40, 0xce, 0x0c, 0x7c, 0xcc, 0xa9, 0xeb, 0x68, 0x53, 0x12, 0xad, 0x0f, 0x47, 0xaf, 0xb4, 0xa5,
+	0x50, 0x57, 0x1e, 0x5e, 0x02, 0x13, 0xc4, 0xc6, 0xd4, 0xd2, 0x80, 0x04, 0x16, 0x87, 0x03, 0x57,
+	0x85, 0xc8, 0x92, 0x69, 0xfa, 0x84, 0x31, 0x14, 0x02, 0xe0, 0x45, 0x30, 0xe9, 0x06, 0xbc, 0x46,
+	0x3d, 0x2d, 0xff, 0x3c, 0x8f, 0xab, 0xeb, 0x5d, 0x9c, 0x1b, 0xf0, 0xaa, 0x07, 0x3f, 0x06, 0x79,
+	0x81, 0x63, 0xdc, 0xaf, 0xd9, 0xd8, 0xd3, 0x4e, 0xcd, 0x66, 0xe6, 0xf2, 0xe5, 0x85, 0xd1, 0x2d,
+	0xd4, 0x2d, 0xa8, 0xf8, 0xb5, 0xc1, 0xfd, 0x35, 0xec, 0xad, 0x3a, 0xdc, 0x6f, 0x22, 0xd5, 0xed,
+	0xac, 0x0b, 0x8b, 0xe0, 0x74, 0xfc, 0x10, 0x9e, 0x05, 0x99, 0xbb, 0xa4, 0x29, 0x2b, 0xae, 0x22,
+	0xf1, 0x13, 0xce, 0x80, 0x89, 0x6d, 0x6c, 0x05, 0x61, 0x79, 0x55, 0x14, 0x2e, 0x16, 0xd2, 0x97,
+	0x94, 0xe2, 0xd3, 0x49, 0x90, 0x8f, 0x34, 0x2a, 0x7c, 0x15, 0x64, 0x1d, 0x6c, 0x13, 0xed, 0xd1,
+	0xaf, 0x3f, 0x15, 0xa5, 0xac, 0x5c, 0x9e, 0x80, 0x7e, 0xfa, 0x46, 0x01, 0xba, 0x49, 0xed, 0x36,
+	0x09, 0x5c, 0xa5, 0x3b, 0xc4, 0xac, 0x0a, 0xdf, 0x6e, 0x89, 0x50, 0x57, 0x6e, 0x36, 0x3d, 0xa2,
+	0x4d, 0xc8, 0xb4, 0xdf, 0x48, 0x34, 0xb9, 0xc6, 0xca, 0x73, 0x75, 0x86, 0xd5, 0x18, 0x61, 0xf8,
+	0x38, 0x7b, 0xfd, 0x23, 0x90, 0xf3, 0x09, 0xab, 0xc8, 0xb6, 0xcb, 0x8d, 0xdb, 0x76, 0xd1, 0xf8,
+	0x11, 0x61, 0x95, 0x6e, 0xdb, 0x4d, 0xf9, 0xe1, 0x0a, 0xbe, 0x0f, 0x80, 0xeb, 0x09, 0x03, 0xd8,
+	0xaa, 0xae, 0x6b, 0xea, 0x78, 0xc3, 0x10, 0x81, 0x1c, 0x7d, 0x06, 0x0b, 0x37, 0xc0, 0x1b, 0x63,
+	0xd4, 0x64, 0xd4, 0x10, 0x64, 0x22, 0x43, 0x50, 0xf8, 0x0c, 0x9c, 0x8a, 0x86, 0x39, 0x04, 0xbb,
+	0x12, 0xc5, 0xe6, 0xcb, 0xc6, 0xe8, 0x1c, 0x22, 0xc2, 0xdc, 0xc0, 0xdf, 0x24, 0x15, 0x41, 0xff,
+	0x91, 0x81, 0xfb, 0x59, 0x91, 0xc6, 0xe4, 0xd9, 0xbc, 0x98, 0xb8, 0xb3, 0x20, 0xc3, 0xb8, 0xdf,
+	0x31, 0xc6, 0xb8, 0x0f, 0x11, 0x98, 0x66, 0xc4, 0xda, 0xaa, 0xf9, 0x44, 0xfc, 0xb1, 0x79, 0x39,
+	0x1c, 0x89, 0x8c, 0x0a, 0xc5, 0x28, 0x2f, 0x94, 0x20, 0xb2, 0x85, 0x08, 0x9b, 0x87, 0xd7, 0x80,
+	0xa8, 0x1d, 0x22, 0x5b, 0xe5, 0xe4, 0x21, 0x94, 0x85, 0xb6, 0x0e, 0xbc, 0xf8, 0x30, 0xdd, 0x0b,
+	0xa0, 0x3c, 0x3c, 0x80, 0x65, 0x90, 0x15, 0x8d, 0x72, 0xc4, 0x64, 0x49, 0x2c, 0xbc, 0x15, 0x69,
+	0xdc, 0x8c, 0x6c, 0xdc, 0xcb, 0xc9, 0x3c, 0x1e, 0xde, 0xb9, 0xff, 0x69, 0xad, 0x1f, 0x64, 0x7b,
+	0xa9, 0xaa, 0x9c, 0x8c, 0x7f, 0xcb, 0xf7, 0xc7, 0xa5, 0x51, 0x94, 0x2c, 0x2d, 0x27, 0x9c, 0x47,
+	0x5f, 0x02, 0xeb, 0x14, 0x7f, 0x51, 0x40, 0x56, 0x86, 0x75, 0x7d, 0x80, 0xa3, 0x2b, 0xa3, 0x93,
+	0x2b, 0x90, 0x87, 0xb4, 0xf8, 0xdd, 0x91, 0x2d, 0xbe, 0x1a, 0x6f, 0xf1, 0x52, 0x82, 0x5a, 0x0a,
+	0xbb, 0xd1, 0x28, 0x1e, 0x29, 0x60, 0xba, 0x4b, 0x3b, 0x32, 0x9c, 0x8d, 0xe1, 0xf4, 0x95, 0xc0,
+	0x88, 0xd4, 0x13, 0xe7, 0xaf, 0x6a, 0x3f, 0x7f, 0x25, 0x50, 0x57, 0x96, 0xea, 0xba, 0x04, 0x76,
+	0x3f, 0xdd, 0xf3, 0x58, 0x1e, 0xc1, 0x2b, 0x31, 0xbe, 0x4a, 0x9c, 0x8d, 0x90, 0xb0, 0x6e, 0x0f,
+	0x10, 0xd6, 0x62, 0x42, 0x17, 0xff, 0x0f, 0xe5, 0x3c, 0xd3, 0xcb, 0x8d, 0x3c, 0x2b, 0x7e, 0x3b,
+	0x05, 0xa6, 0x3b, 0xf7, 0x81, 0x75, 0xec, 0x63, 0xfb, 0x10, 0x12, 0x53, 0xc7, 0x23, 0x31, 0x75,
+	0x4c, 0x12, 0x53, 0xff, 0x0d, 0x89, 0x3d, 0x18, 0x97, 0xc4, 0x36, 0xc6, 0xbf, 0x0b, 0xc9, 0xd8,
+	0x5f, 0x08, 0x8b, 0xbd, 0xd6, 0xcf, 0x62, 0x6a, 0x94, 0xa4, 0x0a, 0x7d, 0x24, 0xa5, 0x46, 0x2e,
+	0x73, 0xb7, 0x07, 0x88, 0x62, 0x31, 0x69, 0x00, 0xc3, 0xaf, 0x73, 0xfa, 0xc0, 0x75, 0x4e, 0x8d,
+	0xdd, 0xd6, 0x66, 0xa2, 0xb7, 0x35, 0xb5, 0xf3, 0x35, 0xb4, 0x03, 0x20, 0xe6, 0xdc, 0xa7, 0xf5,
+	0x80, 0x93, 0x5a, 0x9d, 0x3a, 0x26, 0x75, 0x1a, 0x4c, 0xfb, 0x5e, 0x7c, 0x39, 0x08, 0xdf, 0xae,
+	0x26, 0xf5, 0x6d, 0xa9, 0xa3, 0x6c, 0xb9, 0xad, 0x2b, 0xf4, 0xf2, 0x15, 0xdc, 0xbf, 0xff, 0x82,
+	0xd8, 0x38, 0xfa, 0x21, 0x54, 0xe0, 0x23, 0xa7, 0xec, 0x7a, 0x7c, 0xca, 0x2e, 0x25, 0x98, 0xb2,
+	0x58, 0x9c, 0x51, 0xab, 0x2b, 0xe0, 0xdc, 0xf0, 0xa8, 0x13, 0x7d, 0xc4, 0xfd, 0xae, 0x80, 0x73,
+	0x5d, 0xee, 0x8c, 0x0f, 0xeb, 0xe0, 0xe5, 0xec, 0xce, 0x70, 0x7a, 0x4e, 0x10, 0x4e, 0xdc, 0x44,
+	0x9c, 0xa7, 0x51, 0x3f, 0x4f, 0x27, 0xd0, 0x5b, 0x8e, 0xeb, 0xed, 0x12, 0xf6, 0x6e, 0xba, 0x17,
+	0x5e, 0x79, 0x54, 0x78, 0x1f, 0xc4, 0xb8, 0xfc, 0xe8, 0x45, 0x0a, 0x49, 0xfd, 0x93, 0x01, 0x52,
+	0x5f, 0x3d, 0x6a, 0x3c, 0x87, 0xb0, 0xfb, 0xb1, 0xf4, 0x5d, 0xf1, 0x69, 0xa6, 0x97, 0xd2, 0xca,
+	0x49, 0xa3, 0xf7, 0xef, 0xc6, 0xa5, 0xf7, 0x3b, 0x47, 0x4d, 0xd5, 0xf1, 0xf2, 0xfc, 0x4b, 0xa0,
+	0xb7, 0xf2, 0x57, 0xf1, 0x87, 0xcd, 0x8d, 0xf0, 0x45, 0x16, 0x7a, 0x20, 0x1f, 0xd9, 0x85, 0x17,
+	0x46, 0x27, 0x6c, 0xf0, 0x75, 0xb4, 0xf0, 0x76, 0x82, 0x87, 0xac, 0xe5, 0xb5, 0xc7, 0xfb, 0x7a,
+	0x6a, 0x77, 0x5f, 0x4f, 0xed, 0xed, 0xeb, 0xa9, 0x67, 0xfb, 0x7a, 0xea, 0x8b, 0x96, 0xae, 0x3c,
+	0x6c, 0xe9, 0xa9, 0xc7, 0x2d, 0x5d, 0xd9, 0x6d, 0xe9, 0xca, 0x5e, 0x4b, 0x57, 0xfe, 0x6c, 0xe9,
+	0xca, 0x5f, 0x2d, 0x3d, 0xf5, 0xac, 0xa5, 0x2b, 0x5f, 0x1f, 0xe8, 0xa9, 0xdd, 0x03, 0x3d, 0xb5,
+	0x77, 0xa0, 0xa7, 0xfe, 0xfe, 0xed, 0xc9, 0xbd, 0x74, 0xe6, 0xcb, 0x3f, 0x9e, 0xdc, 0x4b, 0x4f,
+	0x48, 0xc5, 0xf5, 0x49, 0xf9, 0x5c, 0x5a, 0xf9, 0x27, 0x00, 0x00, 0xff, 0xff, 0xe1, 0x35, 0xba,
+	0x88, 0x8a, 0x16, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -768,6 +715,14 @@ type HandleMyApaServiceServer interface {
 	HandleMyApa(context.Context, *HandleMyApaRequest) (*OutputMsg, error)
 }
 
+// UnimplementedHandleMyApaServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedHandleMyApaServiceServer struct {
+}
+
+func (*UnimplementedHandleMyApaServiceServer) HandleMyApa(ctx context.Context, req *HandleMyApaRequest) (*OutputMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleMyApa not implemented")
+}
+
 func RegisterHandleMyApaServiceServer(s *grpc.Server, srv HandleMyApaServiceServer) {
 	s.RegisterService(&_HandleMyApaService_serviceDesc, srv)
 }
@@ -806,7 +761,7 @@ var _HandleMyApaService_serviceDesc = grpc.ServiceDesc{
 func (m *HandleMyApaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -814,43 +769,53 @@ func (m *HandleMyApaRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HandleMyApaRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandleMyApaRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Instance != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Instance.Size()))
-		n1, err1 := m.Instance.MarshalTo(dAtA[i:])
-		if err1 != nil {
-			return 0, err1
-		}
-		i += n1
+	if len(m.DedupId) > 0 {
+		i -= len(m.DedupId)
+		copy(dAtA[i:], m.DedupId)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DedupId)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.AdapterConfig != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.AdapterConfig.Size()))
-		n2, err2 := m.AdapterConfig.MarshalTo(dAtA[i:])
-		if err2 != nil {
-			return 0, err2
+		{
+			size, err := m.AdapterConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.DedupId) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DedupId)))
-		i += copy(dAtA[i:], m.DedupId)
+	if m.Instance != nil {
+		{
+			size, err := m.Instance.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *OutputMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -858,101 +823,122 @@ func (m *OutputMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OutputMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OutputMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if len(m.OutStrMap) > 0 {
+		keysForOutStrMap := make([]string, 0, len(m.OutStrMap))
+		for k := range m.OutStrMap {
+			keysForOutStrMap = append(keysForOutStrMap, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForOutStrMap)
+		for iNdEx := len(keysForOutStrMap) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.OutStrMap[string(keysForOutStrMap[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForOutStrMap[iNdEx])
+			copy(dAtA[i:], keysForOutStrMap[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForOutStrMap[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
+		}
+	}
+	if m.OutIp != nil {
+		{
+			size, err := m.OutIp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.Email != nil {
+		{
+			size, err := m.Email.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x19
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x10
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x19
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x8
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n3, err3 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err3 != nil {
-			return 0, err3
-		}
-		i += n3
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n4, err4 := m.Duration.MarshalTo(dAtA[i:])
-		if err4 != nil {
-			return 0, err4
-		}
-		i += n4
-	}
-	if m.Email != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Email.Size()))
-		n5, err5 := m.Email.MarshalTo(dAtA[i:])
-		if err5 != nil {
-			return 0, err5
-		}
-		i += n5
-	}
-	if m.OutIp != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.OutIp.Size()))
-		n6, err6 := m.OutIp.MarshalTo(dAtA[i:])
-		if err6 != nil {
-			return 0, err6
-		}
-		i += n6
-	}
-	if len(m.OutStrMap) > 0 {
-		for k, _ := range m.OutStrMap {
-			dAtA[i] = 0x62
-			i++
-			v := m.OutStrMap[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + len(v) + sovApaHandlerService(uint64(len(v)))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
-		}
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -960,142 +946,166 @@ func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x93
+		i--
+		dAtA[i] = 0xe4
+		i--
+		dAtA[i] = 0xd2
+		i--
+		dAtA[i] = 0xfa
+	}
+	if m.Email != nil {
+		{
+			size, err := m.Email.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.OptionalIP != nil {
+		{
+			size, err := m.OptionalIP.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Res3Map) > 0 {
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x42
+		}
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DimensionsFixedInt64ValueDType) > 0 {
+		keysForDimensionsFixedInt64ValueDType := make([]string, 0, len(m.DimensionsFixedInt64ValueDType))
+		for k := range m.DimensionsFixedInt64ValueDType {
+			keysForDimensionsFixedInt64ValueDType = append(keysForDimensionsFixedInt64ValueDType, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensionsFixedInt64ValueDType)
+		for iNdEx := len(keysForDimensionsFixedInt64ValueDType) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.DimensionsFixedInt64ValueDType[string(keysForDimensionsFixedInt64ValueDType[iNdEx])]
+			baseI := i
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensionsFixedInt64ValueDType[iNdEx])
+			copy(dAtA[i:], keysForDimensionsFixedInt64ValueDType[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForDimensionsFixedInt64ValueDType[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x19
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x10
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x19
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x8
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.DimensionsFixedInt64ValueDType) > 0 {
-		for k, _ := range m.DimensionsFixedInt64ValueDType {
-			dAtA[i] = 0x2a
-			i++
-			v := m.DimensionsFixedInt64ValueDType[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + sovApaHandlerService(uint64(v))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(v))
-		}
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n7, err7 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err7 != nil {
-			return 0, err7
-		}
-		i += n7
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n8, err8 := m.Duration.MarshalTo(dAtA[i:])
-		if err8 != nil {
-			return 0, err8
-		}
-		i += n8
-	}
-	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x42
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n9, err9 := v.MarshalTo(dAtA[i:])
-				if err9 != nil {
-					return 0, err9
-				}
-				i += n9
-			}
-		}
-	}
-	if m.OptionalIP != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.OptionalIP.Size()))
-		n10, err10 := m.OptionalIP.MarshalTo(dAtA[i:])
-		if err10 != nil {
-			return 0, err10
-		}
-		i += n10
-	}
-	if m.Email != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Email.Size()))
-		n11, err11 := m.Email.MarshalTo(dAtA[i:])
-		if err11 != nil {
-			return 0, err11
-		}
-		i += n11
-	}
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xfa
-		i++
-		dAtA[i] = 0xd2
-		i++
-		dAtA[i] = 0xe4
-		i++
-		dAtA[i] = 0x93
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource1Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1103,43 +1113,53 @@ func (m *Resource1Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource1Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource1Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Str) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
-		i += copy(dAtA[i:], m.Str)
+	if m.SelfRefRes1 != nil {
+		{
+			size, err := m.SelfRefRes1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.ResRef2 != nil {
+		{
+			size, err := m.ResRef2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.ResRef2.Size()))
-		n12, err12 := m.ResRef2.MarshalTo(dAtA[i:])
-		if err12 != nil {
-			return 0, err12
-		}
-		i += n12
 	}
-	if m.SelfRefRes1 != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.SelfRefRes1.Size()))
-		n13, err13 := m.SelfRefRes1.MarshalTo(dAtA[i:])
-		if err13 != nil {
-			return 0, err13
-		}
-		i += n13
+	if len(m.Str) > 0 {
+		i -= len(m.Str)
+		copy(dAtA[i:], m.Str)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource2Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1147,61 +1167,72 @@ func (m *Resource2Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource2Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource2Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Str) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
-		i += copy(dAtA[i:], m.Str)
+	if len(m.Res3Map) > 0 {
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if m.Res3 != nil {
+		{
+			size, err := m.Res3.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Res3.Size()))
-		n14, err14 := m.Res3.MarshalTo(dAtA[i:])
-		if err14 != nil {
-			return 0, err14
-		}
-		i += n14
 	}
-	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n15, err15 := v.MarshalTo(dAtA[i:])
-				if err15 != nil {
-					return 0, err15
-				}
-				i += n15
-			}
-		}
+	if len(m.Str) > 0 {
+		i -= len(m.Str)
+		copy(dAtA[i:], m.Str)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource3Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1209,80 +1240,96 @@ func (m *Resource3Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource3Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource3Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DimensionsFixedInt64ValueDType) > 0 {
+		keysForDimensionsFixedInt64ValueDType := make([]string, 0, len(m.DimensionsFixedInt64ValueDType))
+		for k := range m.DimensionsFixedInt64ValueDType {
+			keysForDimensionsFixedInt64ValueDType = append(keysForDimensionsFixedInt64ValueDType, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensionsFixedInt64ValueDType)
+		for iNdEx := len(keysForDimensionsFixedInt64ValueDType) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.DimensionsFixedInt64ValueDType[string(keysForDimensionsFixedInt64ValueDType[iNdEx])]
+			baseI := i
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensionsFixedInt64ValueDType[iNdEx])
+			copy(dAtA[i:], keysForDimensionsFixedInt64ValueDType[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForDimensionsFixedInt64ValueDType[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x19
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x10
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x19
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x8
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.DimensionsFixedInt64ValueDType) > 0 {
-		for k, _ := range m.DimensionsFixedInt64ValueDType {
-			dAtA[i] = 0x2a
-			i++
-			v := m.DimensionsFixedInt64ValueDType[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + sovApaHandlerService(uint64(v))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(v))
-		}
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n16, err16 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err16 != nil {
-			return 0, err16
-		}
-		i += n16
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n17, err17 := m.Duration.MarshalTo(dAtA[i:])
-		if err17 != nil {
-			return 0, err17
-		}
-		i += n17
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1290,45 +1337,53 @@ func (m *Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x42
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n18, err18 := v.MarshalTo(dAtA[i:])
-				if err18 != nil {
-					return 0, err18
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
 				}
-				i += n18
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x42
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource1Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1336,37 +1391,46 @@ func (m *Resource1Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource1Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource1Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ResRef2 != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.ResRef2.Size()))
-		n19, err19 := m.ResRef2.MarshalTo(dAtA[i:])
-		if err19 != nil {
-			return 0, err19
-		}
-		i += n19
-	}
 	if m.SelfRefRes1 != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.SelfRefRes1.Size()))
-		n20, err20 := m.SelfRefRes1.MarshalTo(dAtA[i:])
-		if err20 != nil {
-			return 0, err20
+		{
+			size, err := m.SelfRefRes1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
 		}
-		i += n20
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if m.ResRef2 != nil {
+		{
+			size, err := m.ResRef2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource2Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1374,55 +1438,65 @@ func (m *Resource2Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource2Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource2Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Res3 != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Res3.Size()))
-		n21, err21 := m.Res3.MarshalTo(dAtA[i:])
-		if err21 != nil {
-			return 0, err21
-		}
-		i += n21
-	}
 	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n22, err22 := v.MarshalTo(dAtA[i:])
-				if err22 != nil {
-					return 0, err22
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
 				}
-				i += n22
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	return i, nil
+	if m.Res3 != nil {
+		{
+			size, err := m.Res3.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource3Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1430,17 +1504,22 @@ func (m *Resource3Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource3Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource3Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1448,135 +1527,165 @@ func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.BoolPrimitive) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
-		i += copy(dAtA[i:], m.BoolPrimitive)
-	}
-	if len(m.DoublePrimitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
-		i += copy(dAtA[i:], m.DoublePrimitive)
-	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.DimensionsFixedInt64ValueDType) > 0 {
-		for k, _ := range m.DimensionsFixedInt64ValueDType {
-			dAtA[i] = 0x2a
-			i++
-			v := m.DimensionsFixedInt64ValueDType[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + len(v) + sovApaHandlerService(uint64(len(v)))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
+	if len(m.AttributeBindings) > 0 {
+		keysForAttributeBindings := make([]string, 0, len(m.AttributeBindings))
+		for k := range m.AttributeBindings {
+			keysForAttributeBindings = append(keysForAttributeBindings, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForAttributeBindings)
+		for iNdEx := len(keysForAttributeBindings) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.AttributeBindings[string(keysForAttributeBindings[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
 			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
-		}
-	}
-	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
-	}
-	if len(m.Duration) > 0 {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
-	}
-	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x42
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForAttributeBindings[iNdEx])
+			copy(dAtA[i:], keysForAttributeBindings[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForAttributeBindings[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n23, err23 := v.MarshalTo(dAtA[i:])
-				if err23 != nil {
-					return 0, err23
-				}
-				i += n23
-			}
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0x93
+			i--
+			dAtA[i] = 0xe4
+			i--
+			dAtA[i] = 0xd3
+			i--
+			dAtA[i] = 0x82
 		}
-	}
-	if len(m.OptionalIP) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.OptionalIP)))
-		i += copy(dAtA[i:], m.OptionalIP)
 	}
 	if len(m.Email) > 0 {
-		dAtA[i] = 0x52
-		i++
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
 		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+		i--
+		dAtA[i] = 0x52
 	}
-	if len(m.AttributeBindings) > 0 {
-		for k, _ := range m.AttributeBindings {
-			dAtA[i] = 0x82
-			i++
-			dAtA[i] = 0xd3
-			i++
-			dAtA[i] = 0xe4
-			i++
-			dAtA[i] = 0x93
-			i++
-			dAtA[i] = 0x2
-			i++
-			v := m.AttributeBindings[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + len(v) + sovApaHandlerService(uint64(len(v)))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.OptionalIP) > 0 {
+		i -= len(m.OptionalIP)
+		copy(dAtA[i:], m.OptionalIP)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.OptionalIP)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Res3Map) > 0 {
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x42
 		}
 	}
-	return i, nil
+	if len(m.Duration) > 0 {
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Duration)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.TimeStamp) > 0 {
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DimensionsFixedInt64ValueDType) > 0 {
+		keysForDimensionsFixedInt64ValueDType := make([]string, 0, len(m.DimensionsFixedInt64ValueDType))
+		for k := range m.DimensionsFixedInt64ValueDType {
+			keysForDimensionsFixedInt64ValueDType = append(keysForDimensionsFixedInt64ValueDType, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensionsFixedInt64ValueDType)
+		for iNdEx := len(keysForDimensionsFixedInt64ValueDType) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.DimensionsFixedInt64ValueDType[string(keysForDimensionsFixedInt64ValueDType[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensionsFixedInt64ValueDType[iNdEx])
+			copy(dAtA[i:], keysForDimensionsFixedInt64ValueDType[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForDimensionsFixedInt64ValueDType[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.DoublePrimitive) > 0 {
+		i -= len(m.DoublePrimitive)
+		copy(dAtA[i:], m.DoublePrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.BoolPrimitive) > 0 {
+		i -= len(m.BoolPrimitive)
+		copy(dAtA[i:], m.BoolPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource1InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1584,43 +1693,53 @@ func (m *Resource1InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource1InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource1InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Str) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
-		i += copy(dAtA[i:], m.Str)
+	if m.SelfRefRes1 != nil {
+		{
+			size, err := m.SelfRefRes1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.ResRef2 != nil {
+		{
+			size, err := m.ResRef2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.ResRef2.Size()))
-		n24, err24 := m.ResRef2.MarshalTo(dAtA[i:])
-		if err24 != nil {
-			return 0, err24
-		}
-		i += n24
 	}
-	if m.SelfRefRes1 != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.SelfRefRes1.Size()))
-		n25, err25 := m.SelfRefRes1.MarshalTo(dAtA[i:])
-		if err25 != nil {
-			return 0, err25
-		}
-		i += n25
+	if len(m.Str) > 0 {
+		i -= len(m.Str)
+		copy(dAtA[i:], m.Str)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource2InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1628,61 +1747,72 @@ func (m *Resource2InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource2InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource2InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Str) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
-		i += copy(dAtA[i:], m.Str)
+	if len(m.Res3Map) > 0 {
+		keysForRes3Map := make([]string, 0, len(m.Res3Map))
+		for k := range m.Res3Map {
+			keysForRes3Map = append(keysForRes3Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes3Map)
+		for iNdEx := len(keysForRes3Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res3Map[string(keysForRes3Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes3Map[iNdEx])
+			copy(dAtA[i:], keysForRes3Map[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForRes3Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if m.Res3 != nil {
+		{
+			size, err := m.Res3.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(m.Res3.Size()))
-		n26, err26 := m.Res3.MarshalTo(dAtA[i:])
-		if err26 != nil {
-			return 0, err26
-		}
-		i += n26
 	}
-	if len(m.Res3Map) > 0 {
-		for k, _ := range m.Res3Map {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Res3Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovApaHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintApaHandlerService(dAtA, i, uint64(v.Size()))
-				n27, err27 := v.MarshalTo(dAtA[i:])
-				if err27 != nil {
-					return 0, err27
-				}
-				i += n27
-			}
-		}
+	if len(m.Str) > 0 {
+		i -= len(m.Str)
+		copy(dAtA[i:], m.Str)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Str)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Resource3InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1690,74 +1820,94 @@ func (m *Resource3InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Resource3InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Resource3InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.BoolPrimitive) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
-		i += copy(dAtA[i:], m.BoolPrimitive)
-	}
-	if len(m.DoublePrimitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
-		i += copy(dAtA[i:], m.DoublePrimitive)
-	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.DimensionsFixedInt64ValueDType) > 0 {
-		for k, _ := range m.DimensionsFixedInt64ValueDType {
-			dAtA[i] = 0x2a
-			i++
-			v := m.DimensionsFixedInt64ValueDType[k]
-			mapSize := 1 + len(k) + sovApaHandlerService(uint64(len(k))) + 1 + len(v) + sovApaHandlerService(uint64(len(v)))
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
-		}
+	if len(m.Duration) > 0 {
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Duration)))
+		i--
+		dAtA[i] = 0x3a
 	}
 	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x32
-		i++
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
 		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
+		i--
+		dAtA[i] = 0x32
 	}
-	if len(m.Duration) > 0 {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
+	if len(m.DimensionsFixedInt64ValueDType) > 0 {
+		keysForDimensionsFixedInt64ValueDType := make([]string, 0, len(m.DimensionsFixedInt64ValueDType))
+		for k := range m.DimensionsFixedInt64ValueDType {
+			keysForDimensionsFixedInt64ValueDType = append(keysForDimensionsFixedInt64ValueDType, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensionsFixedInt64ValueDType)
+		for iNdEx := len(keysForDimensionsFixedInt64ValueDType) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.DimensionsFixedInt64ValueDType[string(keysForDimensionsFixedInt64ValueDType[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensionsFixedInt64ValueDType[iNdEx])
+			copy(dAtA[i:], keysForDimensionsFixedInt64ValueDType[iNdEx])
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(len(keysForDimensionsFixedInt64ValueDType[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApaHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
 	}
-	return i, nil
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.DoublePrimitive) > 0 {
+		i -= len(m.DoublePrimitive)
+		copy(dAtA[i:], m.DoublePrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.BoolPrimitive) > 0 {
+		i -= len(m.BoolPrimitive)
+		copy(dAtA[i:], m.BoolPrimitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintApaHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintApaHandlerService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovApaHandlerService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *HandleMyApaRequest) Size() (n int) {
 	if m == nil {
@@ -2215,14 +2365,7 @@ func (m *Resource3InstanceParam) Size() (n int) {
 }
 
 func sovApaHandlerService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozApaHandlerService(x uint64) (n int) {
 	return sovApaHandlerService(uint64((x << 1) ^ uint64((int64(x) >> 63))))

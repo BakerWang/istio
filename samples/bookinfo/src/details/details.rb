@@ -25,7 +25,7 @@ end
 
 port = Integer(ARGV[0])
 
-server = WEBrick::HTTPServer.new :BindAddress => '0.0.0.0', :Port => port
+server = WEBrick::HTTPServer.new :BindAddress => '*', :Port => port
 
 trap 'INT' do server.shutdown end
 
@@ -135,7 +135,10 @@ def get_forward_headers(request)
                        'x-b3-parentspanid',
                        'x-b3-sampled',
                        'x-b3-flags',
-                       'x-ot-span-context'
+                       'x-ot-span-context',
+                       'x-datadog-trace-id',
+                       'x-datadog-parent-id',
+                       'x-datadog-sampled'
                      ]
 
   request.each do |header, value|

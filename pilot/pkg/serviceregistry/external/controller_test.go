@@ -12,72 +12,355 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package external
+package external_test
 
 import (
-	"sync"
 	"testing"
 	"time"
 
+	networking "istio.io/api/networking/v1alpha3"
+
 	"istio.io/istio/pilot/pkg/config/memory"
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pilot/pkg/serviceregistry/external"
+	"istio.io/istio/pkg/config/schema"
+	"istio.io/istio/pkg/config/schemas"
 )
 
-const (
-	notifyThreshold = 5 * time.Millisecond
-)
+type Event struct {
+	kind      string
+	push      *model.PushRequest
+	host      string
+	namespace string
+	eps       []*model.IstioEndpoint
+}
 
-// TODO: ensure this test is reliable (no timing issues) on different systems
+type FakeXdsUpdater struct {
+	// Events tracks notifications received by the updater
+	Events chan Event
+}
+
+func (fx *FakeXdsUpdater) EDSUpdate(shard, hostname string, namespace string, entry []*model.IstioEndpoint) error {
+	if len(entry) > 0 {
+		fx.Events <- Event{kind: "eds", host: hostname, namespace: namespace, eps: entry}
+	}
+	return nil
+}
+
+func (fx *FakeXdsUpdater) ConfigUpdate(push *model.PushRequest) {
+	fx.Events <- Event{kind: "xds", push: push}
+}
+
+func (fx *FakeXdsUpdater) ProxyUpdate(clusterID, ip string) {
+}
+
+func (fx *FakeXdsUpdater) SvcUpdate(shard, hostname string, namespace string, event model.Event) {
+	fx.Events <- Event{kind: "svcupdate", host: hostname, namespace: namespace}
+}
+
 func TestController(t *testing.T) {
-	configDescriptor := model.ConfigDescriptor{
-		model.ServiceEntry,
+	configDescriptor := schema.Set{
+		schemas.ServiceEntry,
 	}
 	store := memory.Make(configDescriptor)
 	configController := memory.NewController(store)
 
-	countMutex := sync.Mutex{}
-	count := 0
-
-	incrementCount := func() {
-		countMutex.Lock()
-		defer countMutex.Unlock()
-		count++
-	}
-	getCountAndReset := func() int {
-		countMutex.Lock()
-		defer countMutex.Unlock()
-		c := count
-		count = 0
-		return c
+	eventch := make(chan Event)
+	xdsUpdater := &FakeXdsUpdater{
+		Events: eventch,
 	}
 
-	ctl := NewServiceDiscovery(configController, model.MakeIstioStore(configController))
-	err := ctl.AppendInstanceHandler(func(instance *model.ServiceInstance, event model.Event) { incrementCount() })
-	if err != nil {
-		t.Errorf("AppendInstanceHandler() => %q", err)
-	}
-
-	err = ctl.AppendServiceHandler(func(service *model.Service, event model.Event) { incrementCount() })
-	if err != nil {
-		t.Errorf("AppendServiceHandler() => %q", err)
-	}
+	external.NewServiceDiscovery(configController, model.MakeIstioStore(configController), xdsUpdater)
 
 	stop := make(chan struct{})
 	go configController.Run(stop)
 	defer close(stop)
 
-	time.Sleep(notifyThreshold)
-	if c := getCountAndReset(); c != 0 {
-		t.Errorf("got %d notifications from controller, want %d", c, 0)
+	cfg := model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Type:              schemas.ServiceEntry.Type,
+			Name:              "fake",
+			Namespace:         "fake-ns",
+			CreationTimestamp: time.Now(),
+		},
+		Spec: &networking.ServiceEntry{
+			Hosts: []string{"*.google.com"},
+			Ports: []*networking.Port{
+				{Number: 80, Name: "http-port", Protocol: "http"},
+				{Number: 8080, Name: "http-alt-port", Protocol: "http"},
+			},
+			Endpoints: []*networking.ServiceEntry_Endpoint{
+				{
+					Address: "2.2.2.2",
+					Ports:   map[string]uint32{"http-port": 7080, "http-alt-port": 18080},
+				},
+				{
+					Address: "3.3.3.3",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "4.4.4.4",
+					Ports:   map[string]uint32{"http-port": 1080},
+					Labels:  map[string]string{"foo": "bar"},
+				},
+			},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_STATIC,
+		},
 	}
 
-	_, err = configController.Create(*httpStatic)
+	_, err := configController.Create(cfg)
+
 	if err != nil {
-		t.Errorf("error occurred crearting ServiceEntry config: %v", err)
+		t.Fatalf("Error in creating service entry %v", err)
 	}
 
-	time.Sleep(notifyThreshold)
-	if c := getCountAndReset(); c != 7 {
-		t.Errorf("got %d notifications from controller, want %d", c, 7)
+	handler := <-eventch
+	if handler.kind != "xds" && !handler.push.Full {
+		t.Fatalf("Expected full push config update to be called, but got %v", handler)
+	}
+}
+
+// Validate that Service Entry changes trigger appropriate handlers.
+func TestServiceEntryChanges(t *testing.T) {
+	configDescriptor := schema.Set{
+		schemas.ServiceEntry,
+	}
+	store := memory.Make(configDescriptor)
+	configController := memory.NewController(store)
+
+	eventch := make(chan Event)
+
+	xdsUpdater := &FakeXdsUpdater{
+		Events: eventch,
+	}
+
+	external.NewServiceDiscovery(configController, model.MakeIstioStore(configController), xdsUpdater)
+
+	stop := make(chan struct{})
+	go configController.Run(stop)
+	defer close(stop)
+
+	ct := time.Now()
+
+	cfg := model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Type:              schemas.ServiceEntry.Type,
+			Name:              "fake",
+			Namespace:         "fake-ns",
+			CreationTimestamp: ct,
+		},
+		Spec: &networking.ServiceEntry{
+			Hosts: []string{"*.google.com"},
+			Ports: []*networking.Port{
+				{Number: 80, Name: "http-port", Protocol: "http"},
+				{Number: 8080, Name: "http-alt-port", Protocol: "http"},
+			},
+			Endpoints: []*networking.ServiceEntry_Endpoint{
+				{
+					Address: "2.2.2.2",
+					Ports:   map[string]uint32{"http-port": 7080, "http-alt-port": 18080},
+				},
+				{
+					Address: "3.3.3.3",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "4.4.4.4",
+					Ports:   map[string]uint32{"http-port": 1080},
+					Labels:  map[string]string{"foo": "bar"},
+				},
+			},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_STATIC,
+		},
+	}
+
+	revision, err := configController.Create(cfg)
+
+	if err != nil {
+		t.Fatalf("Error in creating service entry %v", err)
+	}
+
+	handler := <-eventch
+	if handler.kind != "xds" && !handler.push.Full {
+		t.Fatalf("Expected config update to be called, but got %v", handler)
+	}
+
+	// Update service entry with Host changes
+	updatecfg := model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Type:              schemas.ServiceEntry.Type,
+			Name:              "fake",
+			Namespace:         "fake-ns",
+			ResourceVersion:   revision,
+			CreationTimestamp: ct,
+		},
+		Spec: &networking.ServiceEntry{
+			Hosts: []string{"*.google.com", "test.com"},
+			Ports: []*networking.Port{
+				{Number: 80, Name: "http-port", Protocol: "http"},
+				{Number: 8080, Name: "http-alt-port", Protocol: "http"},
+			},
+			Endpoints: []*networking.ServiceEntry_Endpoint{
+				{
+					Address: "2.2.2.2",
+					Ports:   map[string]uint32{"http-port": 7080, "http-alt-port": 18080},
+				},
+				{
+					Address: "3.3.3.3",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "4.4.4.4",
+					Ports:   map[string]uint32{"http-port": 1080},
+					Labels:  map[string]string{"foo": "bar"},
+				},
+			},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_STATIC,
+		},
+	}
+
+	revision, err = configController.Update(updatecfg)
+
+	if err != nil {
+		t.Fatalf("Error in creating service entry %v", err)
+	}
+
+	handler = <-eventch
+	if handler.kind != "xds" && !handler.push.Full {
+		t.Fatalf("Expected config update to be called, but got %v", handler)
+	}
+
+	// Update Service Entry with Endpoint changes
+	updatecfg = model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Type:              schemas.ServiceEntry.Type,
+			Name:              "fake",
+			Namespace:         "fake-ns",
+			ResourceVersion:   revision,
+			CreationTimestamp: ct,
+		},
+		Spec: &networking.ServiceEntry{
+			Hosts: []string{"*.google.com", "test.com"},
+			Ports: []*networking.Port{
+				{Number: 80, Name: "http-port", Protocol: "http"},
+				{Number: 8080, Name: "http-alt-port", Protocol: "http"},
+			},
+			Endpoints: []*networking.ServiceEntry_Endpoint{
+				{
+					Address: "2.2.2.2",
+					Ports:   map[string]uint32{"http-port": 7080, "http-alt-port": 18080},
+				},
+				{
+					Address: "3.3.3.3",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "5.5.5.5",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "6.6.6.6",
+					Ports:   map[string]uint32{"http-port": 1080},
+				},
+				{
+					Address: "4.4.4.4",
+					Ports:   map[string]uint32{"http-port": 1080},
+					Labels:  map[string]string{"foo": "bar"},
+				},
+			},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_STATIC,
+		},
+	}
+
+	_, err = configController.Update(updatecfg)
+
+	if err != nil {
+		t.Fatalf("Error in creating service entry %v", err)
+	}
+
+	// Here we expect only eds updates to be called twice, once for each service.
+	handler = <-eventch
+	if handler.kind != "eds" && handler.host != "*.google.com" && handler.namespace != "fake-ns" {
+		t.Fatalf("Expected eds update to be called for %s, but got %v", "*.google.com", handler)
+	}
+
+	handler = <-eventch
+	if handler.kind != "eds" && handler.host != "test.com" && handler.namespace != "fake-ns" {
+		t.Fatalf("Expected eds update to be called for %s, but got %v", "test.com", handler)
+	}
+}
+
+func TestServiceEntryDelete(t *testing.T) {
+	configDescriptor := schema.Set{
+		schemas.ServiceEntry,
+	}
+	store := memory.Make(configDescriptor)
+	configController := memory.NewController(store)
+
+	eventch := make(chan Event)
+
+	xdsUpdater := &FakeXdsUpdater{
+		Events: eventch,
+	}
+
+	external.NewServiceDiscovery(configController, model.MakeIstioStore(configController), xdsUpdater)
+
+	stop := make(chan struct{})
+	go configController.Run(stop)
+	defer close(stop)
+
+	cfg := model.Config{
+		ConfigMeta: model.ConfigMeta{
+			Type:      schemas.ServiceEntry.Type,
+			Name:      "httpbin-egress",
+			Namespace: "test-ns",
+		},
+		Spec: &networking.ServiceEntry{
+			Hosts: []string{"httpbin.default.svc.cluster.local"},
+			Ports: []*networking.Port{
+				{Number: 80, Name: "http-port", Protocol: "http"},
+			},
+			Endpoints: []*networking.ServiceEntry_Endpoint{
+				{
+					Address: "10.31.241.103",
+					Ports:   map[string]uint32{"http-port": 80},
+				},
+			},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_STATIC,
+		},
+	}
+
+	_, err := configController.Create(cfg)
+
+	if err != nil {
+		t.Fatalf("Error in creating service entry %v", err)
+	}
+
+	handler := <-eventch
+	if handler.kind != "xds" {
+		t.Fatalf("Expected config update to be called, but got %v", handler)
+	}
+
+	// delete service entry.
+	err = configController.Delete(schemas.ServiceEntry.Type, "httpbin-egress", "test-ns")
+
+	if err != nil {
+		t.Fatalf("Error in deleting service entry %v", err)
+	}
+
+	// Validate that it triggers SvcUpdate event then followed by full push.
+	handler = <-eventch
+	if handler.kind != "svcupdate" && handler.host != "httpbin.default.svc.cluster.local" && handler.namespace == "test-ns" {
+		t.Fatalf("Expected svc update to be called, but got %v", handler)
+	}
+
+	handler = <-eventch
+	if handler.kind != "xds" {
+		t.Fatalf("Expected config update to be called, but got %v", handler)
 	}
 }

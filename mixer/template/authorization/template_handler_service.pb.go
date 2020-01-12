@@ -8,23 +8,25 @@
 //
 // ```yaml
 // apiVersion: "config.istio.io/v1alpha2"
-// kind: authorization
+// kind: instance
 // metadata:
 //   name: authinfo
 //   namespace: istio-system
 // spec:
-//  subject:
-//    user: source.principal | request.auth.principal | ""
-//    groups: request.auth.claims["groups"] | ""
-//    properties:
-//     iss: request.auth.claims["iss"]
-//  action:
-//    namespace: destination.namespace | "default"
-//    service: destination.service.host | ""
-//    path: request.path | "/"
-//    method: request.method | "post"
-//    properties:
-//      version: destination.labels[version] | ""
+//   compiledTemplate: authorization
+//   params:
+//     subject:
+//       user: source.principal | request.auth.principal | ""
+//       groups: request.auth.claims["groups"] | ""
+//       properties:
+//         iss: request.auth.claims["iss"]
+//     action:
+//       namespace: destination.namespace | "default"
+//       service: destination.service.host | ""
+//       path: request.path | "/"
+//       method: request.method | "post"
+//       properties:
+//         version: destination.labels[version] | ""
 // ```
 //
 // The `authorization` template defines parameters for performing policy
@@ -45,10 +47,13 @@ import (
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	v1beta11 "istio.io/api/mixer/adapter/model/v1beta1"
 	v1beta1 "istio.io/api/policy/v1beta1"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -62,7 +67,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Request message for HandleAuthorization method.
 type HandleAuthorizationRequest struct {
@@ -88,16 +93,12 @@ func (m *HandleAuthorizationRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HandleAuthorizationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HandleAuthorizationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HandleAuthorizationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HandleAuthorizationRequest.Merge(m, src)
@@ -132,16 +133,12 @@ func (m *InstanceMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceMsg.Merge(m, src)
@@ -178,16 +175,12 @@ func (m *SubjectMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SubjectMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SubjectMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SubjectMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SubjectMsg.Merge(m, src)
@@ -224,16 +217,12 @@ func (m *ActionMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ActionMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ActionMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ActionMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ActionMsg.Merge(m, src)
@@ -266,16 +255,12 @@ func (m *Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Type.Merge(m, src)
@@ -305,16 +290,12 @@ func (m *SubjectType) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SubjectType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SubjectType.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SubjectType) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SubjectType.Merge(m, src)
@@ -343,16 +324,12 @@ func (m *ActionType) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ActionType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ActionType.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ActionType) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ActionType.Merge(m, src)
@@ -384,16 +361,12 @@ func (m *InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceParam.Merge(m, src)
@@ -430,16 +403,12 @@ func (m *SubjectInstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SubjectInstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SubjectInstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SubjectInstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SubjectInstanceParam.Merge(m, src)
@@ -476,16 +445,12 @@ func (m *ActionInstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ActionInstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ActionInstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ActionInstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ActionInstanceParam.Merge(m, src)
@@ -523,59 +488,59 @@ func init() {
 }
 
 var fileDescriptor_a6fda8e5c2d879a9 = []byte{
-	// 826 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x56, 0xcf, 0x6f, 0xd3, 0x48,
-	0x14, 0xf6, 0x24, 0xe9, 0x8f, 0x4c, 0xd4, 0xee, 0x6a, 0x9a, 0x5d, 0x39, 0xd9, 0x95, 0x5b, 0x65,
-	0x0f, 0x9b, 0x5d, 0xad, 0xec, 0x4d, 0xba, 0x8b, 0x50, 0xab, 0x1e, 0x4a, 0x85, 0xd4, 0x22, 0x21,
-	0x15, 0x17, 0x71, 0xe0, 0x40, 0x34, 0x71, 0xa6, 0x89, 0x69, 0xe2, 0x31, 0xf6, 0xb8, 0x6a, 0x38,
-	0x21, 0x8e, 0x80, 0x10, 0x52, 0xc5, 0xff, 0xc0, 0x01, 0x89, 0x23, 0x42, 0xe2, 0x0f, 0xa8, 0x38,
-	0x55, 0x1c, 0x50, 0x2f, 0x08, 0x92, 0xf6, 0xc0, 0xb1, 0x47, 0x8e, 0xc8, 0x93, 0x71, 0xe2, 0x58,
-	0x4e, 0x28, 0x07, 0xe8, 0x6d, 0xc6, 0xef, 0x7b, 0x33, 0xef, 0xfb, 0xde, 0x37, 0x9e, 0x81, 0xcb,
-	0x2d, 0x73, 0x8f, 0x38, 0x1a, 0x23, 0x2d, 0xbb, 0x89, 0x19, 0xd1, 0xb0, 0xc7, 0x1a, 0xd4, 0x31,
-	0xef, 0x62, 0x66, 0x52, 0xab, 0xff, 0xb9, 0xd2, 0xc0, 0x56, 0xad, 0x49, 0x9c, 0x8a, 0x4b, 0x9c,
-	0x5d, 0xd3, 0x20, 0xaa, 0xed, 0x50, 0x46, 0xd1, 0xcc, 0x10, 0x3a, 0x9f, 0xad, 0xd3, 0x3a, 0xe5,
-	0x11, 0xcd, 0x1f, 0xf5, 0x40, 0xf9, 0x7f, 0x7a, 0x3b, 0xe0, 0x1a, 0xb6, 0x19, 0x71, 0xb4, 0x16,
-	0xad, 0x91, 0xa6, 0xb6, 0x5b, 0xaa, 0x12, 0x86, 0x4b, 0x1a, 0xd9, 0x63, 0xc4, 0x72, 0x4d, 0x6a,
-	0xb9, 0x02, 0x9d, 0xab, 0x53, 0x5a, 0x6f, 0x12, 0x8d, 0xcf, 0xaa, 0xde, 0xb6, 0x86, 0xad, 0xb6,
-	0x08, 0xfd, 0x39, 0x6e, 0x21, 0xa3, 0x41, 0x8c, 0x1d, 0x01, 0x9c, 0xb7, 0x69, 0xd3, 0x34, 0xda,
-	0xfd, 0xd8, 0x2e, 0x6e, 0x7a, 0xa4, 0xc2, 0xda, 0x36, 0x09, 0x36, 0x89, 0x00, 0x06, 0xa1, 0xc2,
-	0x73, 0x00, 0xf3, 0xeb, 0x9c, 0xec, 0x6a, 0x98, 0x9b, 0x4e, 0xee, 0x78, 0xc4, 0x65, 0xe8, 0x02,
-	0x9c, 0x36, 0x2d, 0x97, 0x61, 0xcb, 0x20, 0x32, 0x58, 0x00, 0xc5, 0x4c, 0x39, 0xaf, 0x0e, 0x89,
-	0xa0, 0x6e, 0x88, 0xf0, 0x55, 0xb7, 0xae, 0xf7, 0xb1, 0x68, 0x19, 0xce, 0x8a, 0xba, 0x2b, 0x06,
-	0xb5, 0xb6, 0xcd, 0xba, 0x9c, 0xe0, 0xd9, 0x59, 0xb5, 0xc7, 0x57, 0x0d, 0xf8, 0xaa, 0xab, 0x56,
-	0x5b, 0x9f, 0x11, 0xd8, 0x35, 0x0e, 0x45, 0x39, 0x38, 0x5d, 0x23, 0x35, 0xcf, 0xae, 0x98, 0x35,
-	0x39, 0xb9, 0x00, 0x8a, 0x69, 0x7d, 0x8a, 0xcf, 0x37, 0x6a, 0x85, 0x87, 0x00, 0x66, 0x42, 0x3b,
-	0xa2, 0x5f, 0x60, 0xca, 0xc2, 0x2d, 0x22, 0xbf, 0x78, 0xf3, 0xba, 0xc0, 0x91, 0x7c, 0x8a, 0x16,
-	0xe1, 0x94, 0xeb, 0x55, 0x6f, 0x13, 0x83, 0x89, 0xaa, 0x73, 0x91, 0xaa, 0xb7, 0x7a, 0x51, 0xbf,
-	0xe8, 0x00, 0x89, 0xfe, 0x85, 0x93, 0xd8, 0xf0, 0xa3, 0xa2, 0x56, 0x39, 0x92, 0xb3, 0xca, 0x83,
-	0x7e, 0x8a, 0xc0, 0x15, 0x3e, 0x00, 0x08, 0x07, 0x2b, 0x21, 0x04, 0x53, 0x9e, 0x4b, 0x1c, 0xbe,
-	0x65, 0x5a, 0xe7, 0x63, 0xf4, 0x2b, 0x9c, 0xac, 0x3b, 0xd4, 0xb3, 0x5d, 0xbe, 0x68, 0x5a, 0x17,
-	0x33, 0xb4, 0x01, 0xa1, 0xed, 0x50, 0x9b, 0x38, 0xcc, 0x24, 0xae, 0x9c, 0x5c, 0x48, 0x16, 0x33,
-	0xe5, 0xbf, 0x46, 0x16, 0xa9, 0x6e, 0xf6, 0xb1, 0x97, 0x2d, 0xe6, 0xb4, 0xf5, 0x50, 0x72, 0xfe,
-	0x26, 0xfc, 0x29, 0x12, 0x46, 0x3f, 0xc3, 0xe4, 0x0e, 0x69, 0x8b, 0x42, 0xfc, 0x21, 0x2a, 0xc1,
-	0x09, 0x6e, 0x0b, 0xc1, 0xed, 0x37, 0xd5, 0x74, 0x99, 0x49, 0xd5, 0x9e, 0x31, 0x54, 0x61, 0x0c,
-	0xf5, 0x86, 0x0f, 0xd1, 0x7b, 0xc8, 0xa5, 0xc4, 0x45, 0x50, 0x78, 0x9a, 0x80, 0xe9, 0x3e, 0x6f,
-	0xf4, 0x3b, 0x4c, 0xfb, 0xf2, 0xba, 0x36, 0x16, 0x76, 0x48, 0xeb, 0x83, 0x0f, 0x48, 0x86, 0x53,
-	0xe2, 0xb8, 0x08, 0xae, 0xc1, 0xd4, 0x17, 0xa1, 0x45, 0x58, 0x83, 0x06, 0xed, 0x14, 0x33, 0x5f,
-	0x30, 0x1b, 0xb3, 0x86, 0x9c, 0xea, 0x09, 0xe6, 0x8f, 0xd1, 0xfa, 0x90, 0x30, 0x13, 0x5c, 0x98,
-	0xe2, 0xa8, 0x4e, 0x9c, 0x9b, 0x2e, 0x14, 0xa6, 0xae, 0xb7, 0x6d, 0x82, 0xfe, 0x8b, 0x1a, 0x2d,
-	0x1f, 0xdf, 0x43, 0x1f, 0x3c, 0x70, 0x5a, 0x29, 0xe2, 0xb4, 0x5c, 0x2c, 0x3f, 0x9e, 0x13, 0x58,
-	0xed, 0x15, 0x80, 0x99, 0xd0, 0x5a, 0xe8, 0x4a, 0x8c, 0x7f, 0xfe, 0x1e, 0xbd, 0xf7, 0x58, 0xa1,
-	0x6e, 0x9d, 0x45, 0xa8, 0xff, 0xc3, 0x42, 0xcd, 0x96, 0xe7, 0xc7, 0x08, 0xc5, 0x0b, 0x0f, 0x89,
-	0xf5, 0x12, 0x40, 0x38, 0xa0, 0x14, 0xb1, 0xfe, 0x44, 0xac, 0xf5, 0x07, 0xf0, 0x73, 0xad, 0xfc,
-	0x01, 0x80, 0x33, 0xc1, 0xef, 0x66, 0x13, 0x3b, 0xb8, 0x85, 0x56, 0xa2, 0x0d, 0xff, 0x23, 0x5e,
-	0xf4, 0xa1, 0xac, 0x41, 0xe7, 0x97, 0x22, 0x9d, 0x2f, 0xc4, 0xf2, 0x1e, 0x4e, 0x0e, 0x2c, 0xf0,
-	0x0e, 0xc0, 0x6c, 0xdc, 0xea, 0xdf, 0xf4, 0xdf, 0xd9, 0x8a, 0xf1, 0xcd, 0xe2, 0x19, 0x28, 0x8c,
-	0x6d, 0xc3, 0xca, 0x59, 0xda, 0x90, 0x0d, 0xb7, 0x21, 0x1d, 0x56, 0xf9, 0x51, 0x02, 0xce, 0xc5,
-	0x10, 0xff, 0x21, 0xbf, 0x1b, 0x3d, 0xc6, 0x8c, 0xe5, 0xaf, 0x37, 0xe5, 0x3b, 0xca, 0x51, 0x7e,
-	0x1c, 0x7f, 0x25, 0x6f, 0x09, 0x76, 0x36, 0x9c, 0x8b, 0x89, 0xa2, 0xe8, 0x09, 0x1a, 0x7d, 0xa9,
-	0xe7, 0x55, 0x71, 0x02, 0xf8, 0xfb, 0x42, 0x15, 0x77, 0xaf, 0xca, 0xdf, 0x17, 0xfd, 0xe3, 0xb0,
-	0xe6, 0xbf, 0x2f, 0x74, 0xe2, 0x7a, 0x4d, 0x76, 0xe9, 0xda, 0x41, 0x47, 0x91, 0x0e, 0x3b, 0x8a,
-	0x74, 0xd4, 0x51, 0xa4, 0xd3, 0x8e, 0x22, 0xdd, 0xeb, 0x2a, 0xe0, 0x59, 0x57, 0x91, 0x0e, 0xba,
-	0x0a, 0x38, 0xec, 0x2a, 0xe0, 0x63, 0x57, 0x01, 0x9f, 0xba, 0x8a, 0x74, 0xda, 0x55, 0xc0, 0x93,
-	0x63, 0x45, 0x3a, 0x3c, 0x56, 0xa4, 0xa3, 0x63, 0x45, 0xfa, 0xfc, 0xf6, 0x64, 0x3f, 0x21, 0xdd,
-	0x7f, 0x7f, 0xb2, 0x9f, 0x18, 0x7e, 0x3a, 0x55, 0x27, 0xf9, 0xfd, 0xbf, 0xf8, 0x25, 0x00, 0x00,
-	0xff, 0xff, 0xbd, 0xc2, 0x29, 0x55, 0x8f, 0x09, 0x00, 0x00,
+	// 831 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x56, 0xbf, 0x6f, 0xdb, 0x46,
+	0x14, 0xe6, 0x49, 0xf2, 0x0f, 0x9d, 0x60, 0xb7, 0x38, 0xab, 0x05, 0xa5, 0x16, 0xb4, 0xa1, 0x0e,
+	0x55, 0x8b, 0x82, 0xac, 0xe4, 0xb6, 0x28, 0x6c, 0x78, 0x70, 0x8d, 0x02, 0x76, 0x81, 0x02, 0x06,
+	0xdd, 0x66, 0xc8, 0x10, 0xe1, 0x44, 0x9d, 0x25, 0xc6, 0x12, 0x8f, 0x21, 0x8f, 0x86, 0x95, 0x29,
+	0xc8, 0x98, 0x04, 0x41, 0x00, 0x23, 0xff, 0x43, 0x86, 0x00, 0x19, 0x83, 0x00, 0xf9, 0x03, 0x8c,
+	0x4c, 0x46, 0x86, 0xc0, 0x4b, 0x90, 0x88, 0xf6, 0x90, 0xd1, 0x63, 0xc6, 0x80, 0xa7, 0xa3, 0x44,
+	0x11, 0x94, 0xe2, 0x0c, 0x89, 0xb7, 0x3b, 0xbe, 0xef, 0xdd, 0xbd, 0xef, 0x7b, 0xdf, 0xf1, 0x0e,
+	0xae, 0x76, 0xcc, 0x03, 0xe2, 0x68, 0x8c, 0x74, 0xec, 0x36, 0x66, 0x44, 0xc3, 0x1e, 0x6b, 0x51,
+	0xc7, 0xbc, 0x89, 0x99, 0x49, 0xad, 0xc1, 0xe7, 0x5a, 0x0b, 0x5b, 0x8d, 0x36, 0x71, 0x6a, 0x2e,
+	0x71, 0xf6, 0x4d, 0x83, 0xa8, 0xb6, 0x43, 0x19, 0x45, 0x73, 0x23, 0xe8, 0x62, 0xbe, 0x49, 0x9b,
+	0x94, 0x47, 0xb4, 0x60, 0xd4, 0x07, 0x15, 0x7f, 0xe9, 0xef, 0x80, 0x1b, 0xd8, 0x66, 0xc4, 0xd1,
+	0x3a, 0xb4, 0x41, 0xda, 0xda, 0x7e, 0xa5, 0x4e, 0x18, 0xae, 0x68, 0xe4, 0x80, 0x11, 0xcb, 0x35,
+	0xa9, 0xe5, 0x0a, 0x74, 0xa1, 0x49, 0x69, 0xb3, 0x4d, 0x34, 0x3e, 0xab, 0x7b, 0xbb, 0x1a, 0xb6,
+	0xba, 0x22, 0xf4, 0xe3, 0xa4, 0x85, 0x8c, 0x16, 0x31, 0xf6, 0x04, 0x70, 0xd1, 0xa6, 0x6d, 0xd3,
+	0xe8, 0x0e, 0x62, 0xfb, 0xb8, 0xed, 0x91, 0x1a, 0xeb, 0xda, 0x24, 0xdc, 0x24, 0x06, 0x18, 0x86,
+	0x4a, 0x8f, 0x01, 0x2c, 0x6e, 0x72, 0xb2, 0xeb, 0x51, 0x6e, 0x3a, 0xb9, 0xe1, 0x11, 0x97, 0xa1,
+	0x3f, 0xe0, 0xac, 0x69, 0xb9, 0x0c, 0x5b, 0x06, 0x91, 0xc1, 0x12, 0x28, 0xe7, 0xaa, 0x45, 0x75,
+	0x44, 0x04, 0x75, 0x4b, 0x84, 0xff, 0x75, 0x9b, 0xfa, 0x00, 0x8b, 0x56, 0xe1, 0xbc, 0xa8, 0xbb,
+	0x66, 0x50, 0x6b, 0xd7, 0x6c, 0xca, 0x29, 0x9e, 0x9d, 0x57, 0xfb, 0x7c, 0xd5, 0x90, 0xaf, 0xba,
+	0x6e, 0x75, 0xf5, 0x39, 0x81, 0xdd, 0xe0, 0x50, 0x54, 0x80, 0xb3, 0x0d, 0xd2, 0xf0, 0xec, 0x9a,
+	0xd9, 0x90, 0xd3, 0x4b, 0xa0, 0x9c, 0xd5, 0x67, 0xf8, 0x7c, 0xab, 0x51, 0xba, 0x0b, 0x60, 0x2e,
+	0xb2, 0x23, 0xfa, 0x06, 0x66, 0x2c, 0xdc, 0x21, 0xf2, 0x93, 0x17, 0xcf, 0x4b, 0x1c, 0xc9, 0xa7,
+	0x68, 0x19, 0xce, 0xb8, 0x5e, 0xfd, 0x3a, 0x31, 0x98, 0xa8, 0xba, 0x10, 0xab, 0x7a, 0xa7, 0x1f,
+	0x0d, 0x8a, 0x0e, 0x91, 0xe8, 0x57, 0x38, 0x8d, 0x8d, 0x20, 0x2a, 0x6a, 0x95, 0x63, 0x39, 0xeb,
+	0x3c, 0x18, 0xa4, 0x08, 0x5c, 0xe9, 0x0d, 0x80, 0x70, 0xb8, 0x12, 0x42, 0x30, 0xe3, 0xb9, 0xc4,
+	0xe1, 0x5b, 0x66, 0x75, 0x3e, 0x46, 0xdf, 0xc2, 0xe9, 0xa6, 0x43, 0x3d, 0xdb, 0xe5, 0x8b, 0x66,
+	0x75, 0x31, 0x43, 0x5b, 0x10, 0xda, 0x0e, 0xb5, 0x89, 0xc3, 0x4c, 0xe2, 0xca, 0xe9, 0xa5, 0x74,
+	0x39, 0x57, 0xfd, 0x69, 0x6c, 0x91, 0xea, 0xf6, 0x00, 0xfb, 0xb7, 0xc5, 0x9c, 0xae, 0x1e, 0x49,
+	0x2e, 0x5e, 0x85, 0x5f, 0xc5, 0xc2, 0xe8, 0x6b, 0x98, 0xde, 0x23, 0x5d, 0x51, 0x48, 0x30, 0x44,
+	0x15, 0x38, 0xc5, 0x6d, 0x21, 0xb8, 0x7d, 0xa7, 0x9a, 0x2e, 0x33, 0xa9, 0xda, 0x37, 0x86, 0x2a,
+	0x8c, 0xa1, 0x5e, 0x09, 0x20, 0x7a, 0x1f, 0xb9, 0x92, 0xfa, 0x13, 0x94, 0x1e, 0xa6, 0x60, 0x76,
+	0xc0, 0x1b, 0x7d, 0x0f, 0xb3, 0x81, 0xbc, 0xae, 0x8d, 0x85, 0x1d, 0xb2, 0xfa, 0xf0, 0x03, 0x92,
+	0xe1, 0x8c, 0x38, 0x2e, 0x82, 0x6b, 0x38, 0x0d, 0x44, 0xe8, 0x10, 0xd6, 0xa2, 0x61, 0x3b, 0xc5,
+	0x2c, 0x10, 0xcc, 0xc6, 0xac, 0x25, 0x67, 0xfa, 0x82, 0x05, 0x63, 0xb4, 0x39, 0x22, 0xcc, 0x14,
+	0x17, 0xa6, 0x3c, 0xae, 0x13, 0x97, 0xa6, 0x0b, 0x85, 0x99, 0xff, 0xba, 0x36, 0x41, 0xbf, 0xc5,
+	0x8d, 0x56, 0x4c, 0xee, 0x61, 0x00, 0x1e, 0x3a, 0xad, 0x12, 0x73, 0x5a, 0x21, 0x91, 0x1f, 0xcf,
+	0x09, 0xad, 0xf6, 0x0c, 0xc0, 0x5c, 0x64, 0x2d, 0xf4, 0x4f, 0x82, 0x7f, 0x7e, 0x1e, 0xbf, 0xf7,
+	0x44, 0xa1, 0xae, 0x5d, 0x44, 0xa8, 0xdf, 0xa3, 0x42, 0xcd, 0x57, 0x17, 0x27, 0x08, 0xc5, 0x0b,
+	0x8f, 0x88, 0xf5, 0x14, 0x40, 0x38, 0xa4, 0x14, 0xb3, 0xfe, 0x54, 0xa2, 0xf5, 0x87, 0xf0, 0x4b,
+	0xad, 0xfc, 0x0e, 0x80, 0x73, 0xe1, 0xef, 0x66, 0x1b, 0x3b, 0xb8, 0x83, 0xd6, 0xe2, 0x0d, 0xff,
+	0x21, 0x59, 0xf4, 0x91, 0xac, 0x61, 0xe7, 0x57, 0x62, 0x9d, 0x2f, 0x25, 0xf2, 0x1e, 0x4d, 0x0e,
+	0x2d, 0xf0, 0x0a, 0xc0, 0x7c, 0xd2, 0xea, 0x9f, 0xf4, 0xdf, 0xd9, 0x49, 0xf0, 0xcd, 0xf2, 0x05,
+	0x28, 0x4c, 0x6c, 0xc3, 0xda, 0x45, 0xda, 0x90, 0x8f, 0xb6, 0x21, 0x1b, 0x55, 0xf9, 0x5e, 0x0a,
+	0x2e, 0x24, 0x10, 0xff, 0x22, 0xbf, 0x1b, 0x3d, 0xc1, 0x8c, 0xd5, 0x8f, 0x37, 0xe5, 0x33, 0xca,
+	0x51, 0xbd, 0x9f, 0x7c, 0x25, 0xef, 0x08, 0x76, 0x36, 0x5c, 0x48, 0x88, 0xa2, 0xf8, 0x09, 0x1a,
+	0x7f, 0xa9, 0x17, 0x55, 0x71, 0x02, 0xf8, 0xfb, 0x42, 0x15, 0x77, 0xaf, 0xca, 0xdf, 0x17, 0x83,
+	0xe3, 0xb0, 0x11, 0xbc, 0x2f, 0x74, 0xe2, 0x7a, 0x6d, 0xf6, 0xd7, 0xff, 0x47, 0x3d, 0x45, 0x3a,
+	0xee, 0x29, 0xd2, 0x49, 0x4f, 0x91, 0xce, 0x7b, 0x8a, 0x74, 0xcb, 0x57, 0xc0, 0x23, 0x5f, 0x91,
+	0x8e, 0x7c, 0x05, 0x1c, 0xfb, 0x0a, 0x38, 0xf1, 0x15, 0xf0, 0xd6, 0x57, 0xc0, 0x3b, 0x5f, 0x91,
+	0xce, 0x7d, 0x05, 0x3c, 0x38, 0x55, 0xa4, 0xe3, 0x53, 0x45, 0x3a, 0x39, 0x55, 0xa4, 0xf7, 0x2f,
+	0xcf, 0x0e, 0x53, 0xd2, 0xed, 0xd7, 0x67, 0x87, 0xa9, 0xd1, 0xe7, 0x53, 0x7d, 0x9a, 0xbf, 0x01,
+	0x96, 0x3f, 0x04, 0x00, 0x00, 0xff, 0xff, 0x02, 0x34, 0xf9, 0xab, 0x93, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -617,6 +582,14 @@ type HandleAuthorizationServiceServer interface {
 	HandleAuthorization(context.Context, *HandleAuthorizationRequest) (*v1beta11.CheckResult, error)
 }
 
+// UnimplementedHandleAuthorizationServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedHandleAuthorizationServiceServer struct {
+}
+
+func (*UnimplementedHandleAuthorizationServiceServer) HandleAuthorization(ctx context.Context, req *HandleAuthorizationRequest) (*v1beta11.CheckResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleAuthorization not implemented")
+}
+
 func RegisterHandleAuthorizationServiceServer(s *grpc.Server, srv HandleAuthorizationServiceServer) {
 	s.RegisterService(&_HandleAuthorizationService_serviceDesc, srv)
 }
@@ -655,7 +628,7 @@ var _HandleAuthorizationService_serviceDesc = grpc.ServiceDesc{
 func (m *HandleAuthorizationRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -663,43 +636,53 @@ func (m *HandleAuthorizationRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HandleAuthorizationRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandleAuthorizationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Instance != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Instance.Size()))
-		n1, err1 := m.Instance.MarshalTo(dAtA[i:])
-		if err1 != nil {
-			return 0, err1
-		}
-		i += n1
+	if len(m.DedupId) > 0 {
+		i -= len(m.DedupId)
+		copy(dAtA[i:], m.DedupId)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.DedupId)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.AdapterConfig != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.AdapterConfig.Size()))
-		n2, err2 := m.AdapterConfig.MarshalTo(dAtA[i:])
-		if err2 != nil {
-			return 0, err2
+		{
+			size, err := m.AdapterConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.DedupId) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.DedupId)))
-		i += copy(dAtA[i:], m.DedupId)
+	if m.Instance != nil {
+		{
+			size, err := m.Instance.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -707,51 +690,61 @@ func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Subject != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Subject.Size()))
-		n3, err3 := m.Subject.MarshalTo(dAtA[i:])
-		if err3 != nil {
-			return 0, err3
-		}
-		i += n3
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x93
+		i--
+		dAtA[i] = 0xe4
+		i--
+		dAtA[i] = 0xd2
+		i--
+		dAtA[i] = 0xfa
 	}
 	if m.Action != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Action.Size()))
-		n4, err4 := m.Action.MarshalTo(dAtA[i:])
-		if err4 != nil {
-			return 0, err4
+		{
+			size, err := m.Action.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xfa
-		i++
-		dAtA[i] = 0xd2
-		i++
-		dAtA[i] = 0xe4
-		i++
-		dAtA[i] = 0x93
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.Subject != nil {
+		{
+			size, err := m.Subject.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SubjectMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -759,57 +752,67 @@ func (m *SubjectMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SubjectMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SubjectMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.User) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.User)))
-		i += copy(dAtA[i:], m.User)
-	}
-	if len(m.Groups) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Groups)))
-		i += copy(dAtA[i:], m.Groups)
-	}
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Properties[k]
-			msgSize := 0
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n5, err5 := v.MarshalTo(dAtA[i:])
-				if err5 != nil {
-					return 0, err5
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n5
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	return i, nil
+	if len(m.Groups) > 0 {
+		i -= len(m.Groups)
+		copy(dAtA[i:], m.Groups)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Groups)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.User) > 0 {
+		i -= len(m.User)
+		copy(dAtA[i:], m.User)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.User)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ActionMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -817,69 +820,81 @@ func (m *ActionMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ActionMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ActionMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Namespace) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Namespace)))
-		i += copy(dAtA[i:], m.Namespace)
-	}
-	if len(m.Service) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Service)))
-		i += copy(dAtA[i:], m.Service)
-	}
-	if len(m.Method) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Method)))
-		i += copy(dAtA[i:], m.Method)
-	}
-	if len(m.Path) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Path)))
-		i += copy(dAtA[i:], m.Path)
-	}
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x2a
-			i++
-			v := m.Properties[k]
-			msgSize := 0
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n6, err6 := v.MarshalTo(dAtA[i:])
-				if err6 != nil {
-					return 0, err6
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n6
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
 		}
 	}
-	return i, nil
+	if len(m.Path) > 0 {
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Method) > 0 {
+		i -= len(m.Method)
+		copy(dAtA[i:], m.Method)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Method)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Service) > 0 {
+		i -= len(m.Service)
+		copy(dAtA[i:], m.Service)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Service)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -887,37 +902,46 @@ func (m *Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Subject != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Subject.Size()))
-		n7, err7 := m.Subject.MarshalTo(dAtA[i:])
-		if err7 != nil {
-			return 0, err7
-		}
-		i += n7
-	}
 	if m.Action != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Action.Size()))
-		n8, err8 := m.Action.MarshalTo(dAtA[i:])
-		if err8 != nil {
-			return 0, err8
+		{
+			size, err := m.Action.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Subject != nil {
+		{
+			size, err := m.Subject.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *SubjectType) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -925,33 +949,44 @@ func (m *SubjectType) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SubjectType) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SubjectType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Properties[k]
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + 1 + sovTemplateHandlerService(uint64(v))
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
 			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ActionType) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -959,33 +994,44 @@ func (m *ActionType) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ActionType) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ActionType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x2a
-			i++
-			v := m.Properties[k]
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + 1 + sovTemplateHandlerService(uint64(v))
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
 			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -993,37 +1039,46 @@ func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Subject != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Subject.Size()))
-		n9, err9 := m.Subject.MarshalTo(dAtA[i:])
-		if err9 != nil {
-			return 0, err9
-		}
-		i += n9
-	}
 	if m.Action != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(m.Action.Size()))
-		n10, err10 := m.Action.MarshalTo(dAtA[i:])
-		if err10 != nil {
-			return 0, err10
+		{
+			size, err := m.Action.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n10
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Subject != nil {
+		{
+			size, err := m.Subject.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *SubjectInstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1031,46 +1086,60 @@ func (m *SubjectInstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SubjectInstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SubjectInstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.User) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.User)))
-		i += copy(dAtA[i:], m.User)
-	}
-	if len(m.Groups) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Groups)))
-		i += copy(dAtA[i:], m.Groups)
-	}
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x1a
-			i++
-			v := m.Properties[k]
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
 			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	return i, nil
+	if len(m.Groups) > 0 {
+		i -= len(m.Groups)
+		copy(dAtA[i:], m.Groups)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Groups)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.User) > 0 {
+		i -= len(m.User)
+		copy(dAtA[i:], m.User)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.User)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ActionInstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1078,62 +1147,80 @@ func (m *ActionInstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ActionInstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ActionInstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Namespace) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Namespace)))
-		i += copy(dAtA[i:], m.Namespace)
-	}
-	if len(m.Service) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Service)))
-		i += copy(dAtA[i:], m.Service)
-	}
-	if len(m.Method) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Method)))
-		i += copy(dAtA[i:], m.Method)
-	}
-	if len(m.Path) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Path)))
-		i += copy(dAtA[i:], m.Path)
-	}
 	if len(m.Properties) > 0 {
-		for k, _ := range m.Properties {
-			dAtA[i] = 0x2a
-			i++
-			v := m.Properties[k]
-			mapSize := 1 + len(k) + sovTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
+		keysForProperties := make([]string, 0, len(m.Properties))
+		for k := range m.Properties {
+			keysForProperties = append(keysForProperties, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForProperties)
+		for iNdEx := len(keysForProperties) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Properties[string(keysForProperties[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
 			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForProperties[iNdEx])
+			copy(dAtA[i:], keysForProperties[iNdEx])
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(keysForProperties[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
 		}
 	}
-	return i, nil
+	if len(m.Path) > 0 {
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Method) > 0 {
+		i -= len(m.Method)
+		copy(dAtA[i:], m.Method)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Method)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Service) > 0 {
+		i -= len(m.Service)
+		copy(dAtA[i:], m.Service)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Service)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintTemplateHandlerService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintTemplateHandlerService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovTemplateHandlerService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *HandleAuthorizationRequest) Size() (n int) {
 	if m == nil {
@@ -1372,14 +1459,7 @@ func (m *ActionInstanceParam) Size() (n int) {
 }
 
 func sovTemplateHandlerService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozTemplateHandlerService(x uint64) (n int) {
 	return sovTemplateHandlerService(uint64((x << 1) ^ uint64((int64(x) >> 63))))

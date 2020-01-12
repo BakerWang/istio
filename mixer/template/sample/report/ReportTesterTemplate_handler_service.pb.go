@@ -12,10 +12,13 @@ import (
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	v1beta11 "istio.io/api/mixer/adapter/model/v1beta1"
 	v1beta1 "istio.io/api/policy/v1beta1"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -29,7 +32,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Request message for HandleReport method.
 type HandleReportRequest struct {
@@ -55,16 +58,12 @@ func (m *HandleReportRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HandleReportRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HandleReportRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HandleReportRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HandleReportRequest.Merge(m, src)
@@ -104,16 +103,12 @@ func (m *InstanceMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceMsg.Merge(m, src)
@@ -150,16 +145,12 @@ func (m *Res1Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1Msg.Merge(m, src)
@@ -194,16 +185,12 @@ func (m *Res2Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2Msg.Merge(m, src)
@@ -234,16 +221,12 @@ func (m *Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Type.Merge(m, src)
@@ -273,16 +256,12 @@ func (m *Res1Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1Type.Merge(m, src)
@@ -310,16 +289,12 @@ func (m *Res2Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2Type.Merge(m, src)
@@ -356,16 +331,12 @@ func (m *InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceParam.Merge(m, src)
@@ -402,16 +373,12 @@ func (m *Res1InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1InstanceParam.Merge(m, src)
@@ -446,16 +413,12 @@ func (m *Res2InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2InstanceParam.Merge(m, src)
@@ -503,85 +466,85 @@ func init() {
 }
 
 var fileDescriptor_82f812d69f2a727f = []byte{
-	// 1242 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xdf, 0x6f, 0xdb, 0xd4,
-	0x17, 0x8f, 0x93, 0x36, 0x89, 0x6f, 0x7f, 0x6c, 0xdf, 0xfb, 0x2d, 0xc2, 0x0d, 0xcc, 0x2b, 0x11,
-	0x42, 0x11, 0x43, 0xb6, 0x6a, 0xb6, 0x51, 0xb5, 0xac, 0xac, 0xa3, 0x13, 0xeb, 0xc4, 0xa6, 0xca,
-	0x2d, 0x3f, 0x54, 0x50, 0x83, 0x53, 0xdf, 0x86, 0x2b, 0xfc, 0x0b, 0xfb, 0xa6, 0x2c, 0x6f, 0x08,
-	0x09, 0xf1, 0x86, 0x90, 0x26, 0xde, 0x79, 0xe4, 0x8d, 0x47, 0x1e, 0xe0, 0x0f, 0x98, 0x78, 0xaa,
-	0x78, 0xda, 0x0b, 0x12, 0x49, 0xf7, 0xc0, 0xe3, 0x1e, 0x91, 0x10, 0x08, 0xf9, 0xda, 0x8e, 0xed,
-	0xc4, 0x59, 0xed, 0x74, 0xa1, 0xdb, 0x53, 0x6c, 0xe7, 0x73, 0xce, 0x3d, 0xe7, 0x73, 0x3f, 0xe7,
-	0x9e, 0x63, 0x83, 0xb7, 0x74, 0x7c, 0x07, 0xd9, 0x22, 0x41, 0xba, 0xa5, 0x29, 0x04, 0x89, 0x8e,
-	0xa2, 0x5b, 0x1a, 0x12, 0x6d, 0x64, 0x99, 0x36, 0x11, 0x65, 0xfa, 0xb3, 0x8d, 0x1c, 0x82, 0xec,
-	0x6d, 0x1f, 0x52, 0xff, 0x58, 0x31, 0x54, 0x0d, 0xd9, 0x75, 0x07, 0xd9, 0x07, 0x78, 0x0f, 0x09,
-	0x96, 0x6d, 0x12, 0x13, 0xbe, 0x80, 0x1d, 0x82, 0x4d, 0x81, 0xba, 0x13, 0x14, 0x55, 0xb1, 0x08,
-	0xb2, 0x05, 0xcf, 0x9b, 0xe0, 0x79, 0xab, 0xcc, 0x35, 0xcd, 0xa6, 0x49, 0xd1, 0xa2, 0x7b, 0xe5,
-	0x19, 0x56, 0x5e, 0xf1, 0x22, 0xf0, 0x4d, 0x44, 0xdd, 0x54, 0x91, 0x26, 0x1e, 0x2c, 0x36, 0x10,
-	0x51, 0x16, 0x45, 0x74, 0x87, 0x20, 0xc3, 0xc1, 0xa6, 0xe1, 0xf8, 0xe8, 0xf9, 0xa6, 0x69, 0x36,
-	0x35, 0x24, 0xd2, 0xbb, 0x46, 0x6b, 0x5f, 0x54, 0x8c, 0xb6, 0xff, 0x57, 0xed, 0x51, 0x8e, 0xbc,
-	0x10, 0x7c, 0xe4, 0x79, 0xcb, 0xd4, 0xf0, 0x5e, 0xbb, 0xf7, 0xe7, 0x81, 0xa2, 0xb5, 0x50, 0x9d,
-	0xb4, 0x2d, 0x14, 0xac, 0xd2, 0x07, 0x08, 0xff, 0xaa, 0xfe, 0xc4, 0x80, 0xff, 0xdf, 0xa0, 0x0c,
-	0x78, 0xe4, 0xc8, 0xe8, 0xd3, 0x16, 0x72, 0x08, 0x7c, 0x1b, 0xb0, 0xd8, 0x70, 0x88, 0x62, 0xec,
-	0x21, 0x87, 0x63, 0x16, 0x0a, 0xb5, 0x29, 0x49, 0x10, 0x8e, 0xe5, 0x44, 0xd8, 0xf0, 0x6d, 0x6e,
-	0x39, 0x4d, 0x39, 0x74, 0x00, 0x57, 0xc0, 0xac, 0x8f, 0xaf, 0xef, 0x99, 0xc6, 0x3e, 0x6e, 0x72,
-	0xf9, 0x05, 0xa6, 0x36, 0x25, 0xcd, 0x09, 0x5e, 0xfe, 0x42, 0x90, 0xbf, 0xb0, 0x66, 0xb4, 0xe5,
-	0x19, 0x1f, 0xfb, 0x26, 0x85, 0xc2, 0x79, 0x50, 0x56, 0x91, 0xda, 0xb2, 0xea, 0x58, 0xe5, 0x0a,
-	0x0b, 0x4c, 0x8d, 0x95, 0x4b, 0xf4, 0x7e, 0x43, 0xad, 0x7e, 0x55, 0x04, 0x53, 0x91, 0x25, 0xe1,
-	0x33, 0x60, 0xc2, 0x50, 0x74, 0xc4, 0xfd, 0xf0, 0xcb, 0xcf, 0x55, 0x8a, 0xa4, 0xb7, 0x70, 0x11,
-	0x4c, 0x52, 0x4e, 0x38, 0x86, 0xae, 0xfa, 0x9c, 0x9f, 0x88, 0xc7, 0x8a, 0xe0, 0xb3, 0x22, 0xbc,
-	0xeb, 0x42, 0x64, 0x0f, 0x09, 0x77, 0x01, 0x50, 0xb1, 0xee, 0x6f, 0x16, 0x97, 0xa7, 0x04, 0xac,
-	0x66, 0x23, 0x40, 0x58, 0xef, 0x39, 0xb8, 0x6e, 0x10, 0xbb, 0x2d, 0x47, 0x3c, 0xc2, 0x97, 0xc0,
-	0x2c, 0x36, 0xc8, 0xe5, 0x8b, 0x9b, 0x36, 0xd6, 0x31, 0xc1, 0x07, 0x88, 0xa6, 0x56, 0x90, 0xfb,
-	0x9e, 0xc2, 0x17, 0xc1, 0x4c, 0xc3, 0x34, 0xb5, 0x10, 0x36, 0xb1, 0xc0, 0xd4, 0xca, 0x72, 0xfc,
-	0x21, 0xac, 0x81, 0x33, 0xaa, 0xd9, 0x6a, 0x68, 0x28, 0xc4, 0x4d, 0x2e, 0x30, 0x35, 0x46, 0xee,
-	0x7f, 0xec, 0x22, 0x1d, 0x62, 0x63, 0xa3, 0x19, 0x22, 0x8b, 0x94, 0xa9, 0xfe, 0xc7, 0xf0, 0x7d,
-	0x50, 0xa6, 0xb1, 0xdc, 0x52, 0x2c, 0xae, 0x44, 0xf3, 0x7f, 0x3d, 0x63, 0xfe, 0x1b, 0xbe, 0xb9,
-	0x97, 0x7d, 0xcf, 0x1b, 0xbc, 0x02, 0x58, 0x82, 0x75, 0xb4, 0x45, 0x14, 0xdd, 0xe2, 0x58, 0xba,
-	0x25, 0xe7, 0x93, 0xb7, 0x64, 0x3b, 0x80, 0xc9, 0xa1, 0x05, 0x5c, 0x06, 0x65, 0xb5, 0x65, 0x2b,
-	0x04, 0x9b, 0x06, 0x07, 0xa8, 0x35, 0x9f, 0x6c, 0xbd, 0xee, 0xa3, 0xe4, 0x1e, 0x1e, 0xae, 0x82,
-	0x09, 0x1b, 0x39, 0x8b, 0xdc, 0x14, 0xb5, 0x7b, 0x39, 0x45, 0x42, 0x32, 0x72, 0x16, 0x5d, 0x35,
-	0x53, 0xbb, 0xca, 0x0e, 0x38, 0xd3, 0xb7, 0xab, 0xf0, 0x2c, 0x28, 0x7c, 0x82, 0xda, 0x54, 0x5a,
-	0xac, 0xec, 0x5e, 0x86, 0x72, 0xcb, 0xa7, 0x95, 0xdb, 0x72, 0x7e, 0x89, 0xa9, 0xac, 0x80, 0x99,
-	0x18, 0x63, 0x09, 0x9e, 0xe7, 0xa2, 0x9e, 0x0b, 0x11, 0xe3, 0xea, 0x77, 0x25, 0x50, 0xf2, 0x43,
-	0x1d, 0x45, 0xee, 0x3b, 0x09, 0x72, 0x5f, 0x4e, 0xcf, 0xce, 0x53, 0x2e, 0xf5, 0xed, 0x01, 0xa9,
-	0x2f, 0x65, 0xc8, 0xfd, 0x89, 0x95, 0xb9, 0x94, 0x4d, 0xe6, 0x52, 0x20, 0x73, 0x09, 0xca, 0xa0,
-	0xec, 0xfe, 0xd6, 0x75, 0xc5, 0xe2, 0xa6, 0x29, 0x21, 0xaf, 0x65, 0x20, 0x84, 0xfa, 0x0a, 0xf8,
-	0x28, 0xd9, 0xde, 0xdd, 0x13, 0x5b, 0x3a, 0x95, 0x7d, 0x30, 0x1d, 0x8d, 0x38, 0xc1, 0xf6, 0x6a,
-	0x3c, 0xaa, 0x2c, 0x7c, 0x46, 0x4a, 0xf4, 0xaf, 0x09, 0x5a, 0xa2, 0xd2, 0x7f, 0x5f, 0xa2, 0xd2,
-	0xe3, 0x2a, 0xd1, 0x53, 0x94, 0xf4, 0x12, 0x28, 0x61, 0xab, 0xae, 0xa8, 0xaa, 0xed, 0xab, 0x7a,
-	0xc8, 0xc2, 0x1b, 0x9b, 0x6b, 0xaa, 0x6a, 0x23, 0xc7, 0x91, 0x8b, 0xd8, 0x72, 0x2f, 0xe1, 0x12,
-	0x28, 0xab, 0x86, 0x53, 0xa7, 0x83, 0xc1, 0x34, 0x35, 0x3d, 0x37, 0x64, 0xd5, 0xdb, 0x5b, 0xb7,
-	0x15, 0x1d, 0xc9, 0x25, 0xd5, 0x70, 0xdc, 0x0b, 0xb8, 0x06, 0x00, 0xd2, 0x15, 0xac, 0x79, 0xcb,
-	0xce, 0x50, 0xdb, 0x6a, 0xb2, 0xed, 0x75, 0x17, 0x17, 0xac, 0xcc, 0xa2, 0xe0, 0x0e, 0x5e, 0x00,
-	0x85, 0x96, 0x8d, 0xb9, 0x59, 0x6a, 0x3b, 0x9f, 0x6c, 0xfb, 0x8e, 0x8d, 0x65, 0x17, 0x35, 0xce,
-	0x12, 0xa9, 0xfe, 0x98, 0x07, 0x13, 0xdb, 0x6d, 0x0b, 0xc1, 0x4b, 0x51, 0xe9, 0xcd, 0x0e, 0xa3,
-	0x91, 0xda, 0xbb, 0xf8, 0x40, 0x7e, 0xef, 0x25, 0xc8, 0x2f, 0xcd, 0xa1, 0xe0, 0xfa, 0x78, 0xa4,
-	0xf6, 0xde, 0x88, 0xb5, 0xe4, 0x0b, 0x29, 0xcf, 0x19, 0x1a, 0x9a, 0xd7, 0x93, 0x77, 0xd3, 0xb0,
-	0x76, 0x29, 0xca, 0x5a, 0xea, 0xac, 0x29, 0x73, 0x7f, 0x17, 0x40, 0x39, 0x58, 0x72, 0x54, 0xf6,
-	0x3e, 0x48, 0x60, 0x6f, 0x25, 0x43, 0xaa, 0x29, 0x18, 0x94, 0xb2, 0x31, 0x28, 0xf5, 0x18, 0x94,
-	0xe0, 0xd6, 0xc0, 0x71, 0xbf, 0x94, 0x25, 0xb6, 0xe4, 0xf3, 0x7e, 0xcc, 0xdb, 0x52, 0x69, 0x1e,
-	0x7b, 0x6c, 0xaf, 0xc5, 0x2b, 0x25, 0x13, 0x31, 0x91, 0xfd, 0xff, 0x87, 0xa1, 0xfb, 0x2f, 0x9d,
-	0xd2, 0xfe, 0x4b, 0xc7, 0xed, 0xff, 0xd8, 0x0b, 0xe0, 0xcb, 0x49, 0xb7, 0xbd, 0x7a, 0x73, 0xfd,
-	0xa6, 0x62, 0x2b, 0x7a, 0xd8, 0x4c, 0xbd, 0x05, 0xfc, 0x24, 0x3f, 0x4a, 0x48, 0xf2, 0x6a, 0x86,
-	0x77, 0x06, 0xea, 0x7b, 0x84, 0x3e, 0xc5, 0xa6, 0x1b, 0x25, 0xd9, 0x94, 0xa3, 0x24, 0x7b, 0x92,
-	0x51, 0x72, 0x67, 0x60, 0x94, 0x5c, 0xcd, 0xcc, 0xc0, 0xb0, 0x81, 0xf2, 0xf9, 0xfe, 0xee, 0xcb,
-	0x46, 0x9b, 0x6b, 0xa5, 0xaf, 0xb9, 0xb2, 0x91, 0xe6, 0x79, 0x23, 0x76, 0xc6, 0x5e, 0x4c, 0x59,
-	0xdc, 0xb1, 0xa8, 0xfc, 0xc3, 0xf6, 0x4a, 0x1a, 0xad, 0xc5, 0x66, 0x2d, 0xf6, 0x24, 0x83, 0x5a,
-	0xd4, 0xb8, 0xda, 0x29, 0x82, 0xff, 0x0d, 0xc4, 0x35, 0x44, 0x8b, 0x6a, 0x82, 0x16, 0xd7, 0x47,
-	0xc9, 0xfb, 0x29, 0xd7, 0xe3, 0xee, 0x80, 0x1e, 0xaf, 0x8d, 0xc4, 0xc2, 0xb8, 0x34, 0x29, 0x65,
-	0xd3, 0xa4, 0x34, 0xa8, 0x49, 0x09, 0x7e, 0x38, 0xd0, 0xbe, 0xd6, 0x46, 0xca, 0x31, 0xb9, 0x8f,
-	0x9d, 0xa2, 0xe2, 0x2b, 0xd6, 0xb1, 0x3d, 0xee, 0x66, 0xbc, 0xc7, 0x8d, 0x46, 0x63, 0xa4, 0xc6,
-	0xbe, 0x2d, 0xd0, 0x1a, 0x93, 0xc6, 0x5c, 0x63, 0xd2, 0xe3, 0xaf, 0xb1, 0xd1, 0x95, 0xf8, 0x6c,
-	0xfc, 0xd5, 0x82, 0xed, 0xbd, 0x39, 0xcc, 0xf7, 0xbd, 0x39, 0xb0, 0xe1, 0xab, 0xc1, 0xb9, 0x81,
-	0x57, 0x03, 0x36, 0x3a, 0xf6, 0x9f, 0x0d, 0xc7, 0x7e, 0xd6, 0x9b, 0xed, 0x4f, 0x26, 0x23, 0xe9,
-	0xeb, 0xbe, 0xef, 0xb4, 0x5b, 0xde, 0xd7, 0x6a, 0xf8, 0x19, 0x98, 0x8e, 0x3e, 0x86, 0x97, 0x53,
-	0xf0, 0x9f, 0xf0, 0xbd, 0xb7, 0x22, 0x26, 0xda, 0xd1, 0x8f, 0xce, 0xbd, 0xe1, 0x20, 0xb0, 0x70,
-	0x5a, 0x1a, 0xb9, 0x76, 0xf3, 0x5e, 0x87, 0xcf, 0x1d, 0x76, 0xf8, 0xdc, 0xfd, 0x0e, 0x9f, 0x7b,
-	0xd8, 0xe1, 0x73, 0x9f, 0x77, 0x79, 0xe6, 0xfb, 0x2e, 0x9f, 0xbb, 0xd7, 0xe5, 0x99, 0xc3, 0x2e,
-	0xcf, 0xfc, 0xde, 0xe5, 0x99, 0x3f, 0xba, 0x7c, 0xee, 0x61, 0x97, 0x67, 0xbe, 0x39, 0xe2, 0x73,
-	0x87, 0x47, 0x7c, 0xee, 0xfe, 0x11, 0x9f, 0xfb, 0xf3, 0xd7, 0x07, 0x77, 0xf3, 0xcc, 0x17, 0xbf,
-	0x3d, 0xb8, 0x9b, 0x2f, 0x7a, 0x01, 0x35, 0x8a, 0xf4, 0xf3, 0xef, 0xab, 0xff, 0x06, 0x00, 0x00,
-	0xff, 0xff, 0xc9, 0xcd, 0x8b, 0x5d, 0xbe, 0x17, 0x00, 0x00,
+	// 1244 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xdd, 0x6f, 0xdb, 0x54,
+	0x14, 0x8f, 0x93, 0x36, 0x89, 0x6f, 0x3f, 0x36, 0x2e, 0x45, 0xb8, 0x81, 0x79, 0x25, 0x42, 0x28,
+	0x62, 0xc8, 0x56, 0xcd, 0x36, 0xaa, 0x96, 0x95, 0x75, 0x74, 0x62, 0x45, 0xac, 0xaa, 0xdc, 0xf2,
+	0xa1, 0x82, 0x1a, 0xdc, 0xfa, 0x36, 0x5c, 0xe1, 0x2f, 0xec, 0x9b, 0xb2, 0xbc, 0x21, 0x24, 0xc4,
+	0x1b, 0x42, 0x9a, 0x78, 0xe7, 0x91, 0x37, 0x1e, 0x79, 0x80, 0x3f, 0x60, 0xe2, 0xa9, 0xe2, 0xa9,
+	0x2f, 0x48, 0x24, 0xdd, 0x03, 0x8f, 0x7b, 0x44, 0x42, 0x20, 0xe4, 0x6b, 0x3b, 0xb6, 0x13, 0x67,
+	0xb5, 0xd3, 0x85, 0x6e, 0x4f, 0xb1, 0x9d, 0xdf, 0x39, 0xf7, 0x9c, 0xdf, 0xfd, 0x9d, 0x7b, 0x8e,
+	0x0d, 0xde, 0xd2, 0xf1, 0x1d, 0x64, 0x8b, 0x04, 0xe9, 0x96, 0xa6, 0x10, 0x24, 0x3a, 0x8a, 0x6e,
+	0x69, 0x48, 0xb4, 0x91, 0x65, 0xda, 0x44, 0x94, 0xe9, 0xcf, 0x16, 0x72, 0x08, 0xb2, 0xb7, 0x7c,
+	0x48, 0xfd, 0x13, 0xc5, 0x50, 0x35, 0x64, 0xd7, 0x1d, 0x64, 0x1f, 0xe0, 0x3d, 0x24, 0x58, 0xb6,
+	0x49, 0x4c, 0xf8, 0x02, 0x76, 0x08, 0x36, 0x05, 0xea, 0x4e, 0x50, 0x54, 0xc5, 0x22, 0xc8, 0x16,
+	0x3c, 0x6f, 0x82, 0xe7, 0xad, 0x32, 0xd3, 0x30, 0x1b, 0x26, 0x45, 0x8b, 0xee, 0x95, 0x67, 0x58,
+	0x79, 0xc5, 0x8b, 0xc0, 0x37, 0x11, 0x75, 0x53, 0x45, 0x9a, 0x78, 0x30, 0xbf, 0x8b, 0x88, 0x32,
+	0x2f, 0xa2, 0x3b, 0x04, 0x19, 0x0e, 0x36, 0x0d, 0xc7, 0x47, 0xcf, 0x36, 0x4c, 0xb3, 0xa1, 0x21,
+	0x91, 0xde, 0xed, 0x36, 0xf7, 0x45, 0xc5, 0x68, 0xf9, 0x7f, 0xd5, 0x1e, 0xe6, 0xc8, 0x0b, 0xc1,
+	0x47, 0x5e, 0xb4, 0x4c, 0x0d, 0xef, 0xb5, 0xba, 0x7f, 0x1e, 0x28, 0x5a, 0x13, 0xd5, 0x49, 0xcb,
+	0x42, 0xc1, 0x2a, 0x3d, 0x80, 0xf0, 0xaf, 0xea, 0xcf, 0x0c, 0x78, 0xfa, 0x16, 0x65, 0xc0, 0x23,
+	0x47, 0x46, 0x9f, 0x35, 0x91, 0x43, 0xe0, 0x3b, 0x80, 0xc5, 0x86, 0x43, 0x14, 0x63, 0x0f, 0x39,
+	0x1c, 0x33, 0x57, 0xa8, 0x4d, 0x48, 0x82, 0x70, 0x22, 0x27, 0xc2, 0x9a, 0x6f, 0x73, 0xdb, 0x69,
+	0xc8, 0xa1, 0x03, 0xb8, 0x04, 0xa6, 0x7d, 0x7c, 0x7d, 0xcf, 0x34, 0xf6, 0x71, 0x83, 0xcb, 0xcf,
+	0x31, 0xb5, 0x09, 0x69, 0x46, 0xf0, 0xf2, 0x17, 0x82, 0xfc, 0x85, 0x15, 0xa3, 0x25, 0x4f, 0xf9,
+	0xd8, 0x37, 0x29, 0x14, 0xce, 0x82, 0xb2, 0x8a, 0xd4, 0xa6, 0x55, 0xc7, 0x2a, 0x57, 0x98, 0x63,
+	0x6a, 0xac, 0x5c, 0xa2, 0xf7, 0x6b, 0x6a, 0xf5, 0xeb, 0x22, 0x98, 0x88, 0x2c, 0x09, 0x9f, 0x01,
+	0x63, 0x86, 0xa2, 0x23, 0xee, 0xc7, 0x5f, 0x7f, 0xa9, 0x52, 0x24, 0xbd, 0x85, 0xf3, 0x60, 0x9c,
+	0x72, 0xc2, 0x31, 0x74, 0xd5, 0xe7, 0xfc, 0x44, 0x3c, 0x56, 0x04, 0x9f, 0x15, 0xe1, 0x3d, 0x17,
+	0x22, 0x7b, 0x48, 0xb8, 0x03, 0x80, 0x8a, 0x75, 0x7f, 0xb3, 0xb8, 0x3c, 0x25, 0x60, 0x39, 0x1b,
+	0x01, 0xc2, 0x6a, 0xd7, 0xc1, 0x4d, 0x83, 0xd8, 0x2d, 0x39, 0xe2, 0x11, 0xbe, 0x04, 0xa6, 0xb1,
+	0x41, 0xae, 0x5e, 0xde, 0xb0, 0xb1, 0x8e, 0x09, 0x3e, 0x40, 0x34, 0xb5, 0x82, 0xdc, 0xf3, 0x14,
+	0xbe, 0x08, 0xa6, 0x76, 0x4d, 0x53, 0x0b, 0x61, 0x63, 0x73, 0x4c, 0xad, 0x2c, 0xc7, 0x1f, 0xc2,
+	0x1a, 0x38, 0xa7, 0x9a, 0xcd, 0x5d, 0x0d, 0x85, 0xb8, 0xf1, 0x39, 0xa6, 0xc6, 0xc8, 0xbd, 0x8f,
+	0x5d, 0xa4, 0x43, 0x6c, 0x6c, 0x34, 0x42, 0x64, 0x91, 0x32, 0xd5, 0xfb, 0x18, 0x7e, 0x00, 0xca,
+	0x34, 0x96, 0xdb, 0x8a, 0xc5, 0x95, 0x68, 0xfe, 0xaf, 0x67, 0xcc, 0x7f, 0xcd, 0x37, 0xf7, 0xb2,
+	0xef, 0x7a, 0x83, 0xd7, 0x00, 0x4b, 0xb0, 0x8e, 0x36, 0x89, 0xa2, 0x5b, 0x1c, 0x4b, 0xb7, 0xe4,
+	0x62, 0xf2, 0x96, 0x6c, 0x05, 0x30, 0x39, 0xb4, 0x80, 0x8b, 0xa0, 0xac, 0x36, 0x6d, 0x85, 0x60,
+	0xd3, 0xe0, 0x00, 0xb5, 0xe6, 0x93, 0xad, 0x57, 0x7d, 0x94, 0xdc, 0xc5, 0xc3, 0x65, 0x30, 0x66,
+	0x23, 0x67, 0x9e, 0x9b, 0xa0, 0x76, 0x2f, 0xa7, 0x48, 0x48, 0x46, 0xce, 0xbc, 0xab, 0x66, 0x6a,
+	0x57, 0xd9, 0x06, 0xe7, 0x7a, 0x76, 0x15, 0x9e, 0x07, 0x85, 0x4f, 0x51, 0x8b, 0x4a, 0x8b, 0x95,
+	0xdd, 0xcb, 0x50, 0x6e, 0xf9, 0xb4, 0x72, 0x5b, 0xcc, 0x2f, 0x30, 0x95, 0x25, 0x30, 0x15, 0x63,
+	0x2c, 0xc1, 0xf3, 0x4c, 0xd4, 0x73, 0x21, 0x62, 0x5c, 0xfd, 0xbe, 0x04, 0x4a, 0x7e, 0xa8, 0xc3,
+	0xc8, 0x7d, 0x3b, 0x41, 0xee, 0x8b, 0xe9, 0xd9, 0x79, 0xc2, 0xa5, 0xbe, 0xd5, 0x27, 0xf5, 0x85,
+	0x0c, 0xb9, 0x3f, 0xb6, 0x32, 0x97, 0xb2, 0xc9, 0x5c, 0x0a, 0x64, 0x2e, 0x41, 0x19, 0x94, 0xdd,
+	0xdf, 0xba, 0xae, 0x58, 0xdc, 0x24, 0x25, 0xe4, 0xb5, 0x0c, 0x84, 0x50, 0x5f, 0x01, 0x1f, 0x25,
+	0xdb, 0xbb, 0x7b, 0x6c, 0x4b, 0xa7, 0xb2, 0x0f, 0x26, 0xa3, 0x11, 0x27, 0xd8, 0x5e, 0x8f, 0x47,
+	0x95, 0x85, 0xcf, 0x48, 0x89, 0xfe, 0x3d, 0x46, 0x4b, 0x54, 0xfa, 0xff, 0x4b, 0x54, 0x7a, 0x54,
+	0x25, 0x7a, 0x86, 0x92, 0x5e, 0x00, 0x25, 0x6c, 0xd5, 0x15, 0x55, 0xb5, 0x7d, 0x55, 0x0f, 0x58,
+	0x78, 0x6d, 0x63, 0x45, 0x55, 0x6d, 0xe4, 0x38, 0x72, 0x11, 0x5b, 0xee, 0x25, 0x5c, 0x00, 0x65,
+	0xd5, 0x70, 0xea, 0x74, 0x30, 0x98, 0xa4, 0xa6, 0x17, 0x06, 0xac, 0xba, 0xbe, 0xb9, 0xae, 0xe8,
+	0x48, 0x2e, 0xa9, 0x86, 0xe3, 0x5e, 0xc0, 0x15, 0x00, 0x90, 0xae, 0x60, 0xcd, 0x5b, 0x76, 0x8a,
+	0xda, 0x56, 0x93, 0x6d, 0x6f, 0xba, 0xb8, 0x60, 0x65, 0x16, 0x05, 0x77, 0xf0, 0x12, 0x28, 0x34,
+	0x6d, 0xcc, 0x4d, 0x53, 0xdb, 0xd9, 0x64, 0xdb, 0x77, 0x6d, 0x2c, 0xbb, 0xa8, 0x51, 0x96, 0x48,
+	0xf5, 0xa7, 0x3c, 0x18, 0xdb, 0x6a, 0x59, 0x08, 0x5e, 0x89, 0x4a, 0x6f, 0x7a, 0x10, 0x8d, 0xd4,
+	0xde, 0xc5, 0x07, 0xf2, 0x7b, 0x3f, 0x41, 0x7e, 0x69, 0x0e, 0x05, 0xd7, 0xc7, 0x43, 0xb5, 0xf7,
+	0x46, 0xac, 0x25, 0x5f, 0x4a, 0x79, 0xce, 0xd0, 0xd0, 0xbc, 0x9e, 0xbc, 0x93, 0x86, 0xb5, 0x2b,
+	0x51, 0xd6, 0x52, 0x67, 0x4d, 0x99, 0xfb, 0xa7, 0x00, 0xca, 0xc1, 0x92, 0xc3, 0xb2, 0xf7, 0x61,
+	0x02, 0x7b, 0x4b, 0x19, 0x52, 0x4d, 0xc1, 0xa0, 0x94, 0x8d, 0x41, 0xa9, 0xcb, 0xa0, 0x04, 0x37,
+	0xfb, 0x8e, 0xfb, 0x85, 0x2c, 0xb1, 0x25, 0x9f, 0xf7, 0x23, 0xde, 0x96, 0x4a, 0xe3, 0xc4, 0x63,
+	0x7b, 0x25, 0x5e, 0x29, 0x99, 0x88, 0x89, 0xec, 0xff, 0xbf, 0x0c, 0xdd, 0x7f, 0xe9, 0x8c, 0xf6,
+	0x5f, 0x3a, 0x69, 0xff, 0x47, 0x5e, 0x00, 0x5f, 0x8d, 0xbb, 0xed, 0xd5, 0x9b, 0xeb, 0x37, 0x14,
+	0x5b, 0xd1, 0xc3, 0x66, 0xea, 0x2d, 0xe0, 0x27, 0xf9, 0x71, 0x42, 0x92, 0xd7, 0x33, 0xbc, 0x33,
+	0x50, 0xdf, 0x43, 0xf4, 0x29, 0x36, 0xdd, 0x28, 0xc9, 0xa6, 0x1c, 0x25, 0xd9, 0xd3, 0x8c, 0x92,
+	0xdb, 0x7d, 0xa3, 0xe4, 0x72, 0x66, 0x06, 0x06, 0x0d, 0x94, 0xcf, 0xf7, 0x76, 0x5f, 0x36, 0xda,
+	0x5c, 0x2b, 0x3d, 0xcd, 0x95, 0x8d, 0x34, 0xcf, 0x5b, 0xb1, 0x33, 0xf6, 0x72, 0xca, 0xe2, 0x8e,
+	0x45, 0xe5, 0x1f, 0xb6, 0xd7, 0xd2, 0x68, 0x2d, 0x36, 0x6b, 0xb1, 0xa7, 0x19, 0xd4, 0xa2, 0xc6,
+	0xd5, 0x76, 0x11, 0x3c, 0xd5, 0x17, 0xd7, 0x00, 0x2d, 0xaa, 0x09, 0x5a, 0x5c, 0x1d, 0x26, 0xef,
+	0x27, 0x5c, 0x8f, 0x3b, 0x7d, 0x7a, 0xbc, 0x31, 0x14, 0x0b, 0xa3, 0xd2, 0xa4, 0x94, 0x4d, 0x93,
+	0x52, 0xbf, 0x26, 0x25, 0xf8, 0x51, 0x5f, 0xfb, 0x5a, 0x19, 0x2a, 0xc7, 0xe4, 0x3e, 0x76, 0x86,
+	0x8a, 0xaf, 0x58, 0x27, 0xf6, 0xb8, 0xb7, 0xe3, 0x3d, 0x6e, 0x38, 0x1a, 0x23, 0x35, 0xf6, 0x5d,
+	0x81, 0xd6, 0x98, 0x34, 0xe2, 0x1a, 0x93, 0x1e, 0x7d, 0x8d, 0x0d, 0xaf, 0xc4, 0x67, 0xe3, 0xaf,
+	0x16, 0x6c, 0xf7, 0xcd, 0x61, 0xb6, 0xe7, 0xcd, 0x81, 0x0d, 0x5f, 0x0d, 0x2e, 0xf4, 0xbd, 0x1a,
+	0xb0, 0xd1, 0xb1, 0xff, 0x7c, 0x38, 0xf6, 0xb3, 0xde, 0x6c, 0x7f, 0x3a, 0x19, 0x49, 0xdf, 0xf4,
+	0x7c, 0xa7, 0xdd, 0xf4, 0xbe, 0x56, 0xc3, 0xcf, 0xc1, 0x64, 0xf4, 0x31, 0xbc, 0x9a, 0x82, 0xff,
+	0x84, 0xef, 0xbd, 0x15, 0x31, 0xd1, 0x8e, 0x7e, 0x74, 0xee, 0x0e, 0x07, 0x81, 0x85, 0xd3, 0xd4,
+	0xc8, 0x8d, 0xf5, 0x7b, 0x6d, 0x3e, 0x77, 0xd8, 0xe6, 0x73, 0x47, 0x6d, 0x3e, 0xf7, 0xa0, 0xcd,
+	0xe7, 0xbe, 0xe8, 0xf0, 0xcc, 0x0f, 0x1d, 0x3e, 0x77, 0xaf, 0xc3, 0x33, 0x87, 0x1d, 0x9e, 0x39,
+	0xea, 0xf0, 0xcc, 0x1f, 0x1d, 0x9e, 0xf9, 0xb3, 0xc3, 0xe7, 0x1e, 0x74, 0x78, 0xe6, 0xdb, 0x63,
+	0x3e, 0x77, 0x78, 0xcc, 0xe7, 0x8e, 0x8e, 0xf9, 0xdc, 0x5f, 0xbf, 0xdd, 0xbf, 0x9b, 0x67, 0xbe,
+	0xfc, 0xfd, 0xfe, 0xdd, 0x7c, 0xd1, 0x0b, 0x6a, 0xb7, 0x48, 0x3f, 0x01, 0xbf, 0xfa, 0x5f, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0xd1, 0x7e, 0x49, 0x8c, 0xc2, 0x17, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -623,6 +586,14 @@ type HandleReportServiceServer interface {
 	HandleReport(context.Context, *HandleReportRequest) (*v1beta11.ReportResult, error)
 }
 
+// UnimplementedHandleReportServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedHandleReportServiceServer struct {
+}
+
+func (*UnimplementedHandleReportServiceServer) HandleReport(ctx context.Context, req *HandleReportRequest) (*v1beta11.ReportResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleReport not implemented")
+}
+
 func RegisterHandleReportServiceServer(s *grpc.Server, srv HandleReportServiceServer) {
 	s.RegisterService(&_HandleReportService_serviceDesc, srv)
 }
@@ -661,7 +632,7 @@ var _HandleReportService_serviceDesc = grpc.ServiceDesc{
 func (m *HandleReportRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -669,45 +640,55 @@ func (m *HandleReportRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HandleReportRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandleReportRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Instances) > 0 {
-		for _, msg := range m.Instances {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+	if len(m.DedupId) > 0 {
+		i -= len(m.DedupId)
+		copy(dAtA[i:], m.DedupId)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DedupId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.AdapterConfig != nil {
+		{
+			size, err := m.AdapterConfig.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-	}
-	if m.AdapterConfig != nil {
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.AdapterConfig.Size()))
-		n1, err1 := m.AdapterConfig.MarshalTo(dAtA[i:])
-		if err1 != nil {
-			return 0, err1
+	}
+	if len(m.Instances) > 0 {
+		for iNdEx := len(m.Instances) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Instances[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
 		}
-		i += n1
 	}
-	if len(m.DedupId) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DedupId)))
-		i += copy(dAtA[i:], m.DedupId)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -715,142 +696,166 @@ func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value.Size()))
-		n2, err2 := m.Value.MarshalTo(dAtA[i:])
-		if err2 != nil {
-			return 0, err2
-		}
-		i += n2
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x93
+		i--
+		dAtA[i] = 0xe4
+		i--
+		dAtA[i] = 0xd2
+		i--
+		dAtA[i] = 0xfa
 	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
+	if m.Res1 != nil {
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n3, err3 := v.MarshalTo(dAtA[i:])
-				if err3 != nil {
-					return 0, err3
-				}
-				i += n3
-			}
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
 		}
 	}
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x29
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x20
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x29
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x18
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + sovReportTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n4, err4 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err4 != nil {
-			return 0, err4
+	if m.Value != nil {
+		{
+			size, err := m.Value.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0xa
 	}
-	if m.Duration != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n5, err5 := m.Duration.MarshalTo(dAtA[i:])
-		if err5 != nil {
-			return 0, err5
-		}
-		i += n5
-	}
-	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n6, err6 := m.Res1.MarshalTo(dAtA[i:])
-		if err6 != nil {
-			return 0, err6
-		}
-		i += n6
-	}
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xfa
-		i++
-		dAtA[i] = 0xd2
-		i++
-		dAtA[i] = 0xe4
-		i++
-		dAtA[i] = 0x93
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -858,156 +863,182 @@ func (m *Res1Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value.Size()))
-		n7, err7 := m.Value.MarshalTo(dAtA[i:])
-		if err7 != nil {
-			return 0, err7
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
 		}
-		i += n7
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n8, err8 := v.MarshalTo(dAtA[i:])
-				if err8 != nil {
-					return 0, err8
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n8
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
 	}
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x29
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x20
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x29
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x18
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + sovReportTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
 		}
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n9, err9 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err9 != nil {
-			return 0, err9
-		}
-		i += n9
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n10, err10 := m.Duration.MarshalTo(dAtA[i:])
-		if err10 != nil {
-			return 0, err10
-		}
-		i += n10
-	}
-	if m.Res2 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n11, err11 := m.Res2.MarshalTo(dAtA[i:])
-		if err11 != nil {
-			return 0, err11
-		}
-		i += n11
-	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n12, err12 := v.MarshalTo(dAtA[i:])
-				if err12 != nil {
-					return 0, err12
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n12
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != nil {
+		{
+			size, err := m.Value.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1015,120 +1046,142 @@ func (m *Res2Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value.Size()))
-		n13, err13 := m.Value.MarshalTo(dAtA[i:])
-		if err13 != nil {
-			return 0, err13
-		}
-		i += n13
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
+	if m.Uri != nil {
+		{
+			size, err := m.Uri.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n14, err14 := v.MarshalTo(dAtA[i:])
-				if err14 != nil {
-					return 0, err14
-				}
-				i += n14
-			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-	}
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n15, err15 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err15 != nil {
-			return 0, err15
-		}
-		i += n15
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n16, err16 := m.Duration.MarshalTo(dAtA[i:])
-		if err16 != nil {
-			return 0, err16
-		}
-		i += n16
-	}
-	if m.IpAddr != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.IpAddr.Size()))
-		n17, err17 := m.IpAddr.MarshalTo(dAtA[i:])
-		if err17 != nil {
-			return 0, err17
-		}
-		i += n17
-	}
-	if m.DnsName != nil {
-		dAtA[i] = 0x62
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.DnsName.Size()))
-		n18, err18 := m.DnsName.MarshalTo(dAtA[i:])
-		if err18 != nil {
-			return 0, err18
-		}
-		i += n18
+		i--
+		dAtA[i] = 0x72
 	}
 	if m.EmailAddr != nil {
+		{
+			size, err := m.EmailAddr.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x6a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.EmailAddr.Size()))
-		n19, err19 := m.EmailAddr.MarshalTo(dAtA[i:])
-		if err19 != nil {
-			return 0, err19
-		}
-		i += n19
 	}
-	if m.Uri != nil {
-		dAtA[i] = 0x72
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Uri.Size()))
-		n20, err20 := m.Uri.MarshalTo(dAtA[i:])
-		if err20 != nil {
-			return 0, err20
+	if m.DnsName != nil {
+		{
+			size, err := m.DnsName.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n20
+		i--
+		dAtA[i] = 0x62
 	}
-	return i, nil
+	if m.IpAddr != nil {
+		{
+			size, err := m.IpAddr.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.Int64Primitive != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Value != nil {
+		{
+			size, err := m.Value.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1136,48 +1189,61 @@ func (m *Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+	if m.Res1 != nil {
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
 	}
 	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + sovReportTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n21, err21 := m.Res1.MarshalTo(dAtA[i:])
-		if err21 != nil {
-			return 0, err21
-		}
-		i += n21
+	if m.Value != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1185,76 +1251,92 @@ func (m *Res1Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + sovReportTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
 	}
 	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n22, err22 := m.Res2.MarshalTo(dAtA[i:])
-		if err22 != nil {
-			return 0, err22
-		}
-		i += n22
 	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n23, err23 := v.MarshalTo(dAtA[i:])
-				if err23 != nil {
-					return 0, err23
-				}
-				i += n23
-			}
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1262,38 +1344,49 @@ func (m *Res2Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
-	}
 	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + sovReportTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != 0 {
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1301,103 +1394,131 @@ func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
-		i += copy(dAtA[i:], m.Value)
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovReportTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+	if m.Res1 != nil {
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-	}
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.BoolPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
-		i += copy(dAtA[i:], m.BoolPrimitive)
-	}
-	if len(m.DoublePrimitive) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
-		i += copy(dAtA[i:], m.DoublePrimitive)
-	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovReportTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
-		}
-	}
-	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
+		i--
+		dAtA[i] = 0x5a
 	}
 	if len(m.Duration) > 0 {
-		dAtA[i] = 0x52
-		i++
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
 		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
+		i--
+		dAtA[i] = 0x52
 	}
-	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n24, err24 := m.Res1.MarshalTo(dAtA[i:])
-		if err24 != nil {
-			return 0, err24
+	if len(m.TimeStamp) > 0 {
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
 		}
-		i += n24
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
+		}
 	}
-	return i, nil
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DoublePrimitive) > 0 {
+		i -= len(m.DoublePrimitive)
+		copy(dAtA[i:], m.DoublePrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.BoolPrimitive) > 0 {
+		i -= len(m.BoolPrimitive)
+		copy(dAtA[i:], m.BoolPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1405,131 +1526,162 @@ func (m *Res1InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
-		i += copy(dAtA[i:], m.Value)
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovReportTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
 		}
-	}
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.BoolPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
-		i += copy(dAtA[i:], m.BoolPrimitive)
-	}
-	if len(m.DoublePrimitive) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
-		i += copy(dAtA[i:], m.DoublePrimitive)
-	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovReportTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
-	}
-	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
-	}
-	if len(m.Duration) > 0 {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
 	}
 	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n25, err25 := m.Res2.MarshalTo(dAtA[i:])
-		if err25 != nil {
-			return 0, err25
-		}
-		i += n25
 	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovReportTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Duration) > 0 {
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.TimeStamp) > 0 {
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n26, err26 := v.MarshalTo(dAtA[i:])
-				if err26 != nil {
-					return 0, err26
-				}
-				i += n26
-			}
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
 		}
 	}
-	return i, nil
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DoublePrimitive) > 0 {
+		i -= len(m.DoublePrimitive)
+		copy(dAtA[i:], m.DoublePrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.BoolPrimitive) > 0 {
+		i -= len(m.BoolPrimitive)
+		copy(dAtA[i:], m.BoolPrimitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1537,86 +1689,108 @@ func (m *Res2InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
-		i += copy(dAtA[i:], m.Value)
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovReportTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovReportTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
-		}
-	}
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
-	}
-	if len(m.Duration) > 0 {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
-	}
-	if len(m.IpAddr) > 0 {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.IpAddr)))
-		i += copy(dAtA[i:], m.IpAddr)
-	}
-	if len(m.DnsName) > 0 {
-		dAtA[i] = 0x62
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DnsName)))
-		i += copy(dAtA[i:], m.DnsName)
+	if len(m.Uri) > 0 {
+		i -= len(m.Uri)
+		copy(dAtA[i:], m.Uri)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Uri)))
+		i--
+		dAtA[i] = 0x72
 	}
 	if len(m.EmailAddr) > 0 {
-		dAtA[i] = 0x6a
-		i++
+		i -= len(m.EmailAddr)
+		copy(dAtA[i:], m.EmailAddr)
 		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.EmailAddr)))
-		i += copy(dAtA[i:], m.EmailAddr)
+		i--
+		dAtA[i] = 0x6a
 	}
-	if len(m.Uri) > 0 {
-		dAtA[i] = 0x72
-		i++
-		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Uri)))
-		i += copy(dAtA[i:], m.Uri)
+	if len(m.DnsName) > 0 {
+		i -= len(m.DnsName)
+		copy(dAtA[i:], m.DnsName)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.DnsName)))
+		i--
+		dAtA[i] = 0x62
 	}
-	return i, nil
+	if len(m.IpAddr) > 0 {
+		i -= len(m.IpAddr)
+		copy(dAtA[i:], m.IpAddr)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.IpAddr)))
+		i--
+		dAtA[i] = 0x5a
+	}
+	if len(m.Duration) > 0 {
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.TimeStamp) > 0 {
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintReportTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintReportTesterTemplateHandlerService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovReportTesterTemplateHandlerService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *HandleReportRequest) Size() (n int) {
 	if m == nil {
@@ -2087,14 +2261,7 @@ func (m *Res2InstanceParam) Size() (n int) {
 }
 
 func sovReportTesterTemplateHandlerService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozReportTesterTemplateHandlerService(x uint64) (n int) {
 	return sovReportTesterTemplateHandlerService(uint64((x << 1) ^ uint64((int64(x) >> 63))))

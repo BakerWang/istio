@@ -21,21 +21,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/googleapis/google/rpc"
 	"github.com/gogo/protobuf/types"
+
+	rpc "istio.io/gogo-genproto/googleapis/google/rpc"
 
 	tpb "istio.io/api/mixer/adapter/model/v1beta1"
 	v1 "istio.io/api/mixer/v1"
 	"istio.io/api/policy/v1beta1"
-	"istio.io/common/pkg/log"
 	"istio.io/istio/mixer/pkg/adapter"
-	"istio.io/istio/mixer/pkg/attribute"
-	"istio.io/istio/mixer/pkg/pool"
 	"istio.io/istio/mixer/pkg/runtime/config"
 	"istio.io/istio/mixer/pkg/runtime/handler"
 	"istio.io/istio/mixer/pkg/runtime/routing"
 	"istio.io/istio/mixer/pkg/runtime/testing/data"
 	"istio.io/istio/mixer/pkg/status"
+	"istio.io/pkg/attribute"
+	"istio.io/pkg/log"
+	"istio.io/pkg/pool"
 )
 
 var gp = pool.NewGoroutinePool(10, true)

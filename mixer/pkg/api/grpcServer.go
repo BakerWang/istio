@@ -19,21 +19,23 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gogo/googleapis/google/rpc"
 	"github.com/hashicorp/go-multierror"
 	"github.com/opentracing/opentracing-go"
 	otlog "github.com/opentracing/opentracing-go/log"
 	"google.golang.org/grpc/codes"
 	grpc "google.golang.org/grpc/status"
 
+	rpc "istio.io/gogo-genproto/googleapis/google/rpc"
+
 	mixerpb "istio.io/api/mixer/v1"
-	"istio.io/common/pkg/log"
 	"istio.io/istio/mixer/pkg/attribute"
 	"istio.io/istio/mixer/pkg/checkcache"
 	"istio.io/istio/mixer/pkg/loadshedding"
-	"istio.io/istio/mixer/pkg/pool"
 	"istio.io/istio/mixer/pkg/runtime/dispatcher"
 	"istio.io/istio/mixer/pkg/status"
+	attr "istio.io/pkg/attribute"
+	"istio.io/pkg/log"
+	"istio.io/pkg/pool"
 )
 
 type (
@@ -119,7 +121,7 @@ func (s *grpcServer) Check(ctx context.Context, req *mixerpb.CheckRequest) (*mix
 	}
 
 	// This holds the output state of preprocess operations
-	checkBag := attribute.GetMutableBag(protoBag)
+	checkBag := attr.GetMutableBag(protoBag)
 
 	resp, err := s.check(ctx, req, protoBag, checkBag)
 
@@ -130,7 +132,7 @@ func (s *grpcServer) Check(ctx context.Context, req *mixerpb.CheckRequest) (*mix
 }
 
 func (s *grpcServer) check(ctx context.Context, req *mixerpb.CheckRequest,
-	protoBag *attribute.ProtoBag, checkBag *attribute.MutableBag) (*mixerpb.CheckResponse, error) {
+	protoBag *attribute.ProtoBag, checkBag *attr.MutableBag) (*mixerpb.CheckResponse, error) {
 
 	globalWordCount := int(req.GlobalWordCount)
 
@@ -146,7 +148,7 @@ func (s *grpcServer) check(ctx context.Context, req *mixerpb.CheckRequest,
 
 	// snapshot the state after we've called the APAs so that we can reuse it
 	// for every check + quota call.
-	snapApa := protoBag.SnapshotReferencedAttributes()
+	snapApa := protoBag.Snapshot()
 
 	cr, err := s.dispatcher.Check(ctx, checkBag)
 	if err != nil {
@@ -198,7 +200,7 @@ func (s *grpcServer) check(ctx context.Context, req *mixerpb.CheckRequest,
 			}
 
 			// restore to the post-APA state
-			protoBag.RestoreReferencedAttributes(snapApa)
+			protoBag.Restore(snapApa)
 
 			lg.Debuga("Dispatching Quota: ", qma.Quota)
 
@@ -213,6 +215,7 @@ func (s *grpcServer) check(ctx context.Context, req *mixerpb.CheckRequest,
 				if !status.IsOK(qr.Status) {
 					lg.Debugf("Quota denied: %v", qr.Status)
 				}
+				crqr.Status = qr.Status
 				crqr.ValidDuration = qr.ValidDuration
 				crqr.GrantedAmount = qr.Amount
 			}
@@ -262,8 +265,8 @@ func (s *grpcServer) Report(ctx context.Context, req *mixerpb.ReportRequest) (*m
 	var errors *multierror.Error
 
 	var protoBag *attribute.ProtoBag
-	var accumBag *attribute.MutableBag
-	var reportBag *attribute.MutableBag
+	var accumBag *attr.MutableBag
+	var reportBag *attr.MutableBag
 
 	totalBags := len(req.Attributes)
 	for i := range req.Attributes {
@@ -274,9 +277,9 @@ func (s *grpcServer) Report(ctx context.Context, req *mixerpb.ReportRequest) (*m
 		case mixerpb.DELTA_ENCODING:
 			if i == 0 {
 				protoBag = attribute.GetProtoBag(&req.Attributes[i], s.globalDict, s.globalWordList)
-				accumBag = attribute.GetMutableBag(protoBag)
-				reportBag = attribute.GetMutableBag(accumBag)
-			} else if err := accumBag.UpdateBagFromProto(&req.Attributes[i], s.globalWordList); err != nil {
+				accumBag = attr.GetMutableBag(protoBag)
+				reportBag = attr.GetMutableBag(accumBag)
+			} else if err := attribute.UpdateBagFromProto(accumBag, &req.Attributes[i], s.globalWordList); err != nil {
 				err = fmt.Errorf("request could not be processed due to invalid attributes: %v", err)
 				span.LogFields(otlog.String("error", err.Error()))
 				span.Finish()
@@ -291,7 +294,7 @@ func (s *grpcServer) Report(ctx context.Context, req *mixerpb.ReportRequest) (*m
 			}
 		case mixerpb.INDEPENDENT_ENCODING:
 			protoBag = attribute.GetProtoBag(&req.Attributes[i], s.globalDict, s.globalWordList)
-			reportBag = attribute.GetMutableBag(protoBag)
+			reportBag = attr.GetMutableBag(protoBag)
 			if err := dispatchSingleReport(newctx, s.dispatcher, reporter, protoBag, reportBag); err != nil {
 				span.LogFields(otlog.String("error", err.Error()))
 				span.Finish()
@@ -304,17 +307,29 @@ func (s *grpcServer) Report(ctx context.Context, req *mixerpb.ReportRequest) (*m
 
 		switch req.RepeatedAttributesSemantics {
 		case mixerpb.DELTA_ENCODING:
-			reportBag.Reset()
+			if reportBag != nil {
+				reportBag.Reset()
+			}
 		case mixerpb.INDEPENDENT_ENCODING:
-			reportBag.Done()
-			protoBag.Done()
+			if reportBag != nil {
+				reportBag.Done()
+			}
+			if protoBag != nil {
+				protoBag.Done()
+			}
 		}
 	}
 
 	if req.RepeatedAttributesSemantics == mixerpb.DELTA_ENCODING {
-		accumBag.Done()
-		reportBag.Done()
-		protoBag.Done()
+		if accumBag != nil {
+			accumBag.Done()
+		}
+		if reportBag != nil {
+			reportBag.Done()
+		}
+		if protoBag != nil {
+			protoBag.Done()
+		}
 	}
 
 	if err := reporter.Flush(); err != nil {
@@ -336,7 +351,7 @@ func (s *grpcServer) Report(ctx context.Context, req *mixerpb.ReportRequest) (*m
 }
 
 func dispatchSingleReport(ctx context.Context, preprocessor dispatcher.Dispatcher, reporter dispatcher.Reporter,
-	attributesBag attribute.Bag, reportBag *attribute.MutableBag) error {
+	attributesBag attribute.Bag, reportBag *attr.MutableBag) error {
 
 	lg.Debug("Dispatching Preprocess")
 

@@ -1,4 +1,4 @@
-// Copyright 2018 Istio Authors
+// Copyright 2019 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,271 +15,106 @@
 package model
 
 import (
-	"fmt"
-	"net/url"
-	"strconv"
-	"sync"
+	"istio.io/api/security/v1beta1"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	"github.com/gogo/protobuf/types"
-
-	authn "istio.io/api/authentication/v1alpha1"
+	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/config/schemas"
 )
+
+// MutualTLSMode is the mutule TLS mode specified by authentication policy.
+type MutualTLSMode int
 
 const (
-	// SDSStatPrefix is the human readable prefix to use when emitting statistics for the SDS service.
-	SDSStatPrefix = "sdsstat"
+	// MTLSUnknown is used to indicate the variable hasn't been initialized correctly (with the authentication policy).
+	MTLSUnknown MutualTLSMode = iota
 
-	// SDSDefaultResourceName is the default name in sdsconfig, used for fetching normal key/cert.
-	SDSDefaultResourceName = "default"
+	// MTLSDisable if authentication policy disable mTLS.
+	MTLSDisable
 
-	// SDSRootResourceName is the sdsconfig name for root CA, used for fetching root cert.
-	SDSRootResourceName = "ROOTCA"
+	// MTLSPermissive if authentication policy enable mTLS in permissive mode.
+	MTLSPermissive
 
-	// K8sSATrustworthyJwtFileName is the token volume mount file name for k8s trustworthy jwt token.
-	K8sSATrustworthyJwtFileName = "/var/run/secrets/tokens/istio-token"
-
-	// K8sSAJwtFileName is the token volume mount file name for k8s jwt token.
-	K8sSAJwtFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-
-	// FileBasedMetadataPlugName is File Based Metadata credentials plugin name.
-	FileBasedMetadataPlugName = "envoy.grpc_credentials.file_based_metadata"
-
-	// K8sSAJwtTokenHeaderKey is the request header key for k8s jwt token.
-	// Binary header name must has suffix "-bin", according to https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md.
-	K8sSAJwtTokenHeaderKey = "istio_sds_credentials_header-bin"
-
-	// IngressGatewaySdsUdsPath is the UDS path for ingress gateway to get credentials via SDS.
-	IngressGatewaySdsUdsPath = "unix:/var/run/ingress_gateway/sds"
-
-	// IngressGatewaySdsCaSuffix is the suffix of the sds resource name for root CA.
-	IngressGatewaySdsCaSuffix = "-cacert"
+	// MTLSStrict if authentication policy enable mTLS in strict mode.
+	MTLSStrict
 )
 
-// JwtKeyResolver resolves JWT public key and JwksURI.
-var JwtKeyResolver = newJwksResolver(JwtPubKeyExpireDuration, JwtPubKeyEvictionDuration, JwtPubKeyRefreshInterval)
-
-// GetConsolidateAuthenticationPolicy returns the authentication policy for workload specified by
-// hostname (or label selector if specified) and port, if defined.
-// It also tries to resolve JWKS URI if necessary.
-func GetConsolidateAuthenticationPolicy(store IstioConfigStore, serviceInstance *ServiceInstance) *authn.Policy {
-	service := serviceInstance.Service
-	port := serviceInstance.Endpoint.ServicePort
-	labels := serviceInstance.Labels
-
-	config := store.AuthenticationPolicyForWorkload(service, labels, port)
-	if config != nil {
-		policy := config.Spec.(*authn.Policy)
-		if err := JwtKeyResolver.SetAuthenticationPolicyJwksURIs(policy); err == nil {
-			return policy
-		}
-	}
-
-	return nil
-}
-
-// ConstructSdsSecretConfig constructs SDS secret configuration for ingress gateway.
-func ConstructSdsSecretConfigForGatewayListener(name, sdsUdsPath string) *auth.SdsSecretConfig {
-	if name == "" || sdsUdsPath == "" {
-		return nil
-	}
-
-	gRPCConfig := &core.GrpcService_GoogleGrpc{
-		TargetUri:  sdsUdsPath,
-		StatPrefix: SDSStatPrefix,
-	}
-
-	return &auth.SdsSecretConfig{
-		Name: name,
-		SdsConfig: &core.ConfigSource{
-			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-				ApiConfigSource: &core.ApiConfigSource{
-					ApiType: core.ApiConfigSource_GRPC,
-					GrpcServices: []*core.GrpcService{
-						{
-							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-								GoogleGrpc: gRPCConfig,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-// ConstructSdsSecretConfig constructs SDS Sececret Configuration for workload proxy.
-func ConstructSdsSecretConfig(name, sdsUdsPath string, useK8sSATrustworthyJwt, useK8sSANormalJwt bool, metadata map[string]string) *auth.SdsSecretConfig {
-	if name == "" || sdsUdsPath == "" {
-		return nil
-	}
-
-	gRPCConfig := &core.GrpcService_GoogleGrpc{
-		TargetUri:  sdsUdsPath,
-		StatPrefix: SDSStatPrefix,
-		ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
-			CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
-				LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
-			},
-		},
-	}
-
-	// If metadata[NodeMetadataSdsTokenPath] is non-empty, envoy will fetch tokens from metadata[NodeMetadataSdsTokenPath].
-	// Otherwise, if useK8sSATrustworthyJwt is set, envoy will fetch and pass k8s sa trustworthy jwt(which is available for k8s 1.10 or higher),
-	// pass it to SDS server to request key/cert; if trustworthy jwt isn't available, envoy will fetch and pass normal k8s sa jwt to
-	// request key/cert.
-	if sdsTokenPath, found := metadata[NodeMetadataSdsTokenPath]; found && len(sdsTokenPath) > 0 {
-		log.Debugf("SDS token path is (%v)", sdsTokenPath)
-		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
-		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(sdsTokenPath, K8sSAJwtTokenHeaderKey)
-	} else if useK8sSATrustworthyJwt {
-		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
-		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey)
-	} else if useK8sSANormalJwt {
-		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
-		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey)
-	} else {
-		gRPCConfig.CallCredentials = []*core.GrpcService_GoogleGrpc_CallCredentials{
-			{
-				CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-					GoogleComputeEngine: &types.Empty{},
-				},
-			},
-		}
-	}
-
-	return &auth.SdsSecretConfig{
-		Name: name,
-		SdsConfig: &core.ConfigSource{
-			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-				ApiConfigSource: &core.ApiConfigSource{
-					ApiType: core.ApiConfigSource_GRPC,
-					GrpcServices: []*core.GrpcService{
-						{
-							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-								GoogleGrpc: gRPCConfig,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-// ConstructValidationContext constructs ValidationContext in CommonTlsContext.
-func ConstructValidationContext(rootCAFilePath string, subjectAltNames []string) *auth.CommonTlsContext_ValidationContext {
-	ret := &auth.CommonTlsContext_ValidationContext{
-		ValidationContext: &auth.CertificateValidationContext{
-			TrustedCa: &core.DataSource{
-				Specifier: &core.DataSource_Filename{
-					Filename: rootCAFilePath,
-				},
-			},
-		},
-	}
-
-	if len(subjectAltNames) > 0 {
-		ret.ValidationContext.VerifySubjectAltName = subjectAltNames
-	}
-
-	return ret
-}
-
-// ParseJwksURI parses the input URI and returns the corresponding hostname, port, and whether SSL is used.
-// URI must start with "http://" or "https://", which corresponding to "http" or "https" scheme.
-// Port number is extracted from URI if available (i.e from postfix :<port>, eg. ":80"), or assigned
-// to a default value based on URI scheme (80 for http and 443 for https).
-// Port name is set to URI scheme value.
-// Note: this is to replace [buildJWKSURIClusterNameAndAddress]
-// (https://github.com/istio/istio/blob/master/pilot/pkg/proxy/envoy/v1/mixer.go#L401),
-// which is used for the old EUC policy.
-func ParseJwksURI(jwksURI string) (string, *Port, bool, error) {
-	u, err := url.Parse(jwksURI)
-	if err != nil {
-		return "", nil, false, err
-	}
-	var useSSL bool
-	var portNumber int
-	switch u.Scheme {
-	case "http":
-		useSSL = false
-		portNumber = 80
-	case "https":
-		useSSL = true
-		portNumber = 443
+// String converts MutualTLSMode to human readable string for debugging.
+func (mode MutualTLSMode) String() string {
+	switch mode {
+	case MTLSDisable:
+		return "DISABLE"
+	case MTLSPermissive:
+		return "PERMISSIVE"
+	case MTLSStrict:
+		return "STRICT"
 	default:
-		return "", nil, false, fmt.Errorf("URI scheme %q is not supported", u.Scheme)
+		return "UNKNOWN"
+	}
+}
+
+// AuthenticationPolicies organizes authentication (mTLS + JWT) policies by namespace.
+type AuthenticationPolicies struct {
+	// Maps from namespace to the v1beta1 authentication policies.
+	requestAuthentications map[string][]Config
+
+	// Maps from namespace to mTLS mode.
+	namespaceMTLSMode map[string]MutualTLSMode
+
+	rootNamespace string
+}
+
+// initAuthenticationPolicies creates a new AuthenticationPolicies struct and populates with the
+// authentication policies in the mesh environment.
+func initAuthenticationPolicies(env *Environment) *AuthenticationPolicies {
+	policy := &AuthenticationPolicies{
+		requestAuthentications: map[string][]Config{},
+		namespaceMTLSMode:      map[string]MutualTLSMode{},
+		rootNamespace:          env.Mesh().GetRootNamespace(),
 	}
 
-	if u.Port() != "" {
-		portNumber, err = strconv.Atoi(u.Port())
-		if err != nil {
-			return "", nil, useSSL, err
+	if configs, err := env.List(schemas.RequestAuthentication.Type, NamespaceAll); err == nil {
+		sortConfigByCreationTime(configs)
+		policy.addRequestAuthentication(configs)
+	}
+
+	// TODO(diemtvu): populate mTLS mode from mesh config and namespace labels.
+	return policy
+}
+
+func (policy *AuthenticationPolicies) addRequestAuthentication(configs []Config) {
+	for _, config := range configs {
+		policy.requestAuthentications[config.Namespace] =
+			append(policy.requestAuthentications[config.Namespace], config)
+	}
+}
+
+// GetJwtPoliciesForWorkload returns a list of JWT policies matching to labels.
+func (policy *AuthenticationPolicies) GetJwtPoliciesForWorkload(namespace string,
+	workloadLabels labels.Collection) []*Config {
+	configs := make([]*Config, 0)
+	lookupInNamespaces := []string{namespace}
+	if namespace != policy.rootNamespace {
+		// Only check the root namespace if the (workload) namespace is not already the root namespace
+		// to avoid double inclusion.
+		lookupInNamespaces = append(lookupInNamespaces, policy.rootNamespace)
+	}
+	for _, ns := range lookupInNamespaces {
+		if nsConfig, ok := policy.requestAuthentications[ns]; ok {
+			for idx := range nsConfig {
+				cfg := &nsConfig[idx]
+				if ns != cfg.Namespace {
+					// Should never come here. Log warning just in case.
+					log.Warnf("Seeing config %s with namespace %s in map entry for %s. Ignored", cfg.Name, cfg.Namespace, ns)
+					continue
+				}
+				spec := cfg.Spec.(*v1beta1.RequestAuthentication)
+				selector := labels.Instance(spec.GetSelector().GetMatchLabels())
+				if workloadLabels.IsSupersetOf(selector) {
+					configs = append(configs, cfg)
+				}
+			}
 		}
 	}
 
-	return u.Hostname(), &Port{
-		Name: u.Scheme,
-		Port: portNumber,
-	}, useSSL, nil
-}
-
-// this function is used to construct SDS config which is only available from 1.1
-func ConstructgRPCCallCredentials(tokenFileName, headerKey string) []*core.GrpcService_GoogleGrpc_CallCredentials {
-	// If k8s sa jwt token file exists, envoy only handles plugin credentials.
-	config := &v2alpha.FileBasedMetadataConfig{
-		SecretData: &core.DataSource{
-			Specifier: &core.DataSource_Filename{
-				Filename: tokenFileName,
-			},
-		},
-		HeaderKey: headerKey,
-	}
-
-	any := findOrMarshalFileBasedMetadataConfig(tokenFileName, headerKey, config)
-
-	return []*core.GrpcService_GoogleGrpc_CallCredentials{
-		{
-			CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
-				FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-					Name: FileBasedMetadataPlugName,
-					ConfigType: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-						TypedConfig: any},
-				},
-			},
-		},
-	}
-}
-
-type fbMetadataAnyKey struct {
-	tokenFileName string
-	headerKey     string
-}
-
-var fileBasedMetadataConfigAnyMap sync.Map
-
-// findOrMarshalFileBasedMetadataConfig searches google.protobuf.Any in fileBasedMetadataConfigAnyMap
-// by tokenFileName and headerKey, and returns google.protobuf.Any proto if found. If not found,
-// it takes the fbMetadata and marshals it into google.protobuf.Any, and stores this new
-// google.protobuf.Any into fileBasedMetadataConfigAnyMap.
-// FileBasedMetadataConfig only supports non-deterministic marshaling. As each SDS config contains
-// marshaled FileBasedMetadataConfig, the SDS config would differ if marshaling FileBasedMetadataConfig
-// returns different result. Once SDS config differs, Envoy will create multiple SDS clients to fetch
-// same SDS resource. To solve this problem, we use findOrMarshalFileBasedMetadataConfig so that
-// FileBasedMetadataConfig is marshaled once, and is reused in all SDS configs.
-func findOrMarshalFileBasedMetadataConfig(tokenFileName, headerKey string, fbMetadata *v2alpha.FileBasedMetadataConfig) *types.Any {
-	key := fbMetadataAnyKey{
-		tokenFileName: tokenFileName,
-		headerKey:     headerKey,
-	}
-	if v, found := fileBasedMetadataConfigAnyMap.Load(key); found {
-		marshalAny := v.(types.Any)
-		return &marshalAny
-	}
-	any, _ := types.MarshalAny(fbMetadata)
-	fileBasedMetadataConfigAnyMap.Store(key, *any)
-	return any
+	return configs
 }

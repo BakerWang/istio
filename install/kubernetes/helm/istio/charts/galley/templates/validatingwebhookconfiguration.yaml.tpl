@@ -10,7 +10,6 @@ metadata:
     release: {{ .Release.Name }}
     istio: galley
 webhooks:
-{{- if .Values.global.configValidation }}
   - name: pilot.validation.istio.io
     clientConfig:
       service:
@@ -36,6 +35,15 @@ webhooks:
         - UPDATE
         apiGroups:
         - rbac.istio.io
+        apiVersions:
+        - "*"
+        resources:
+        - "*"
+      - operations:
+        - CREATE
+        - UPDATE
+        apiGroups:
+        - security.istio.io
         apiVersions:
         - "*"
         resources:
@@ -83,38 +91,10 @@ webhooks:
         resources:
         - rules
         - attributemanifests
-        - circonuses
-        - deniers
-        - fluentds
-        - kubernetesenvs
-        - listcheckers
-        - memquotas
-        - noops
-        - opas
-        - prometheuses
-        - rbacs
-        - solarwindses
-        - stackdrivers
-        - cloudwatches
-        - dogstatsds
-        - statsds
-        - stdios
-        - apikeys
-        - authorizations
-        - checknothings
-        # - kuberneteses
-        - listentries
-        - logentries
-        - metrics
-        - quotas
-        - reportnothings
-        - tracespans
         - adapters
         - handlers
         - instances
         - templates
-        - zipkins
     failurePolicy: Fail
     sideEffects: None
-{{- end }}
 {{- end }}

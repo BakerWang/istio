@@ -21,28 +21,29 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
-	scheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/kubernetes/scheme"
 
-	kube_meta "istio.io/istio/galley/pkg/metadata/kube"
+	"istio.io/istio/galley/pkg/config/schema"
+	"istio.io/istio/pilot/pkg/serviceregistry/kube/controller"
 )
 
 var (
 	verifyInstallCmd *cobra.Command
 )
 
-func verifyInstall(enableVerbose bool, istioNamespaceFlag *string,
-	restClientGetter resource.RESTClientGetter, options resource.FilenameOptions,
+func verifyInstall(enableVerbose bool, istioNamespaceFlag string,
+	restClientGetter genericclioptions.RESTClientGetter, options resource.FilenameOptions,
 	writer io.Writer, args []string) error {
 	if len(options.Filenames) == 0 {
 		if len(args) != 0 {
-			fmt.Fprint(writer, verifyInstallCmd.UsageString())
+			_, _ = fmt.Fprint(writer, verifyInstallCmd.UsageString())
 			return fmt.Errorf("verify-install takes no arguments to perform installation pre-check")
 		}
 		return installPreCheck(istioNamespaceFlag, restClientGetter, writer)
@@ -52,7 +53,7 @@ func verifyInstall(enableVerbose bool, istioNamespaceFlag *string,
 
 }
 
-func verifyPostInstall(enableVerbose bool, istioNamespaceFlag *string,
+func verifyPostInstall(enableVerbose bool, istioNamespaceFlag string,
 	restClientGetter resource.RESTClientGetter, options resource.FilenameOptions, writer io.Writer) error {
 	crdCount := 0
 	istioDeploymentCount := 0
@@ -85,7 +86,7 @@ func verifyPostInstall(enableVerbose bool, istioNamespaceFlag *string,
 		}
 		switch kind {
 		case "Deployment":
-			deployment := &v1beta1.Deployment{}
+			deployment := &appsv1.Deployment{}
 			err = info.Client.
 				Get().
 				Resource(kinds).
@@ -101,7 +102,7 @@ func verifyPostInstall(enableVerbose bool, istioNamespaceFlag *string,
 			if err != nil {
 				return err
 			}
-			if namespace == *istioNamespaceFlag && strings.HasPrefix(name, "istio-") {
+			if namespace == istioNamespaceFlag && strings.HasPrefix(name, "istio-") {
 				istioDeploymentCount++
 			}
 		case "Job":
@@ -148,21 +149,21 @@ func verifyPostInstall(enableVerbose bool, istioNamespaceFlag *string,
 			}
 		}
 		if enableVerbose {
-			fmt.Fprintf(writer, "%s: %s.%s checked successfully\n", kind, name, namespace)
+			_, _ = fmt.Fprintf(writer, "%s: %s.%s checked successfully\n", kind, name, namespace)
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(writer, "Checked %v crds\n", crdCount)
-	fmt.Fprintf(writer, "Checked %v Istio Deployments\n", istioDeploymentCount)
-	fmt.Fprintf(writer, "Istio is installed successfully\n")
+	_, _ = fmt.Fprintf(writer, "Checked %v crds\n", crdCount)
+	_, _ = fmt.Fprintf(writer, "Checked %v Istio Deployments\n", istioDeploymentCount)
+	_, _ = fmt.Fprintf(writer, "Istio is installed successfully\n")
 	return nil
 }
 
 // NewVerifyCommand creates a new command for verifying Istio Installation Status
-func NewVerifyCommand(istioNamespaceFlag *string) *cobra.Command {
+func NewVerifyCommand() *cobra.Command {
 	var (
 		kubeConfigFlags = &genericclioptions.ConfigFlags{
 			Context:    strPtr(""),
@@ -176,7 +177,8 @@ func NewVerifyCommand(istioNamespaceFlag *string) *cobra.Command {
 			Recursive: boolPtr(false),
 			Usage:     "Istio YAML installation file.",
 		}
-		enableVerbose bool
+		enableVerbose  bool
+		istioNamespace string
 	)
 	verifyInstallCmd = &cobra.Command{
 		Use:   "verify-install",
@@ -192,21 +194,20 @@ func NewVerifyCommand(istioNamespaceFlag *string) *cobra.Command {
 `,
 		Example: `
 		# Verify that Istio can be freshly installed
-		istioctl experimental verify-install
-		
-		# Verify that the deployment matches the istio-demo profile
-		istioctl experimental verify-install -f istio-demo.yaml
+		istioctl verify-install
 		
 		# Verify the deployment matches a custom Istio deployment configuration
-		istioctl experimental verify-install -f $HOME/istio.yaml
+		istioctl verify-install -f $HOME/istio.yaml
 `,
 		RunE: func(c *cobra.Command, args []string) error {
-			return verifyInstall(enableVerbose, istioNamespaceFlag, kubeConfigFlags,
+			return verifyInstall(enableVerbose, istioNamespace, kubeConfigFlags,
 				fileNameFlags.ToOptions(), c.OutOrStderr(), args)
 		},
 	}
 
 	flags := verifyInstallCmd.PersistentFlags()
+	flags.StringVarP(&istioNamespace, "istioNamespace", "i", controller.IstioNamespace,
+		"Istio system namespace")
 	kubeConfigFlags.AddFlags(flags)
 	fileNameFlags.AddFlags(flags)
 	verifyInstallCmd.Flags().BoolVar(&enableVerbose, "enableVerbose", true,
@@ -222,8 +223,8 @@ func boolPtr(val bool) *bool {
 	return &val
 }
 
-func getDeploymentStatus(deployment *v1beta1.Deployment, name, fileName string) error {
-	cond := getDeploymentCondition(deployment.Status, v1beta1.DeploymentProgressing)
+func getDeploymentStatus(deployment *appsv1.Deployment, name, fileName string) error {
+	cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
 	if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
 		msg := fmt.Sprintf("Istio installation failed, incomplete or does not match \"%s\""+
 			" - deployment %q exceeded its progress deadline", fileName, name)
@@ -250,7 +251,7 @@ func getDeploymentStatus(deployment *v1beta1.Deployment, name, fileName string) 
 	return nil
 }
 
-func getDeploymentCondition(status v1beta1.DeploymentStatus, condType v1beta1.DeploymentConditionType) *v1beta1.DeploymentCondition {
+func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
 	for i := range status.Conditions {
 		c := status.Conditions[i]
 		if c.Type == condType {
@@ -261,9 +262,9 @@ func getDeploymentCondition(status v1beta1.DeploymentStatus, condType v1beta1.De
 }
 
 func findResourceInSpec(kind string) string {
-	for _, spec := range kube_meta.Types.All() {
-		if spec.Kind == kind {
-			return spec.Plural
+	for _, c := range schema.MustGet().KubeCollections().All() {
+		if c.Resource().Kind() == kind {
+			return c.Resource().Plural()
 		}
 	}
 	return ""

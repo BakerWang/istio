@@ -29,6 +29,7 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
   name: validation-readiness-dummy-rule
+  namespace: %s
 spec:
   match: request.headers["foo"] == "bar"
   actions:
@@ -38,7 +39,8 @@ spec:
 `
 )
 
-func waitForValidationWebhook(accessor *kube.Accessor) error {
+func waitForValidationWebhook(accessor *kube.Accessor, cfg Config) error {
+	dummyValidationRule = fmt.Sprintf(dummyValidationRule, cfg.SystemNamespace)
 
 	defer func() {
 		e := accessor.DeleteContents("", dummyValidationRule)

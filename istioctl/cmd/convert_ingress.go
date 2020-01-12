@@ -22,27 +22,32 @@ import (
 	"os"
 
 	"github.com/ghodss/yaml"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
 	"k8s.io/api/extensions/v1beta1"
 
-	"istio.io/common/pkg/log"
+	"istio.io/pkg/log"
+
+	"istio.io/istio/galley/pkg/config/schema/collection"
+	"istio.io/istio/galley/pkg/config/schema/collections"
+	"istio.io/istio/galley/pkg/config/util/pilotadapter"
 	"istio.io/istio/istioctl/pkg/convert"
 	"istio.io/istio/pilot/pkg/config/kube/crd"
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/config/schema"
+	"istio.io/istio/pkg/config/validation"
 )
 
 var (
 	inFilenames        []string
 	outConvertFilename string
+
+	schemas = collection.SchemasFor(
+		collections.IstioNetworkingV1Alpha3Virtualservices,
+		collections.IstioNetworkingV1Alpha3Gateways)
 )
 
 func convertConfigs(readers []io.Reader, writer io.Writer) error {
-	configDescriptor := model.ConfigDescriptor{
-		model.VirtualService,
-		model.Gateway,
-	}
-
 	configs, ingresses, err := readConfigs(readers)
 	if err != nil {
 		return err
@@ -67,7 +72,7 @@ func convertConfigs(readers []io.Reader, writer io.Writer) error {
 		return multierror.Prefix(err, "Ingress rules invalid")
 	}
 
-	writeYAMLOutput(configDescriptor, out, writer)
+	writeYAMLOutput(schemas, out, writer)
 
 	// sanity check that the outputs are valid
 	if err := validateConfigs(out); err != nil {
@@ -128,35 +133,37 @@ func readConfigs(readers []io.Reader) ([]model.Config, []*v1beta1.Ingress, error
 	return out, outIngresses, nil
 }
 
-func writeYAMLOutput(descriptor model.ConfigDescriptor, configs []model.Config, writer io.Writer) {
-	for i, config := range configs {
-		schema, exists := descriptor.GetByType(config.Type)
+func writeYAMLOutput(schemas collection.Schemas, configs []model.Config, writer io.Writer) {
+	for i, cfg := range configs {
+		s, exists := schemas.FindByKind(schema.NormalizeKind(cfg.Type))
 		if !exists {
-			log.Errorf("Unknown kind %q for %v", crd.ResourceName(config.Type), config.Name)
+			log.Errorf("Unknown kind %q for %v", cfg.Type, cfg.Name)
 			continue
 		}
-		obj, err := crd.ConvertConfig(schema, config)
+		obj, err := pilotadapter.ConvertConfigToObject(s, cfg)
 		if err != nil {
-			log.Errorf("Could not decode %v: %v", config.Name, err)
+			log.Errorf("Could not decode %v: %v", cfg.Name, err)
 			continue
 		}
 		bytes, err := yaml.Marshal(obj)
 		if err != nil {
-			log.Errorf("Could not convert %v to YAML: %v", config, err)
+			log.Errorf("Could not convert %v to YAML: %v", cfg, err)
 			continue
 		}
-		writer.Write(bytes) // nolint: errcheck
+		_, _ = writer.Write(bytes) // nolint: errcheck
 		if i+1 < len(configs) {
-			writer.Write([]byte("---\n")) // nolint: errcheck
+			_, _ = writer.Write([]byte("---\n")) // nolint: errcheck
 		}
 	}
 }
 
 func validateConfigs(configs []model.Config) error {
 	var errs error
-	for _, config := range configs {
-		if config.Type == model.VirtualService.Type {
-			if err := model.ValidateVirtualService(config.Name, config.Namespace, config.Spec); err != nil {
+	normalizedVirtualServicesKind :=
+		schema.NormalizeKind(collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind())
+	for _, cfg := range configs {
+		if normalizedVirtualServicesKind == schema.NormalizeKind(cfg.Type) {
+			if err := validation.ValidateVirtualService(cfg.Name, cfg.Namespace, cfg.Spec); err != nil {
 				errs = multierror.Append(err, errs)
 			}
 		}
@@ -190,7 +197,7 @@ func convertIngress() *cobra.Command {
 			"Warnings will be generated where configs cannot be converted perfectly. " +
 			"The input must be a Kubernetes Ingress. " +
 			"The conversion of v1alpha1 Istio rules has been removed from istioctl.",
-		Example: "istioctl experimental convert-ingress -f samples/bookinfo/platform/kube/bookinfo-ingress.yaml",
+		Example: "istioctl convert-ingress -f samples/bookinfo/platform/kube/bookinfo-ingress.yaml",
 		RunE: func(c *cobra.Command, args []string) error {
 			if len(inFilenames) == 0 {
 				return fmt.Errorf("no input files provided")

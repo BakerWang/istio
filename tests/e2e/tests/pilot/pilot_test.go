@@ -27,13 +27,13 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/multierr"
+	"github.com/hashicorp/go-multierror"
 
-	"istio.io/common/pkg/log"
-	"istio.io/istio/pilot/pkg/kube/inject"
 	util2 "istio.io/istio/pilot/test/util"
+	"istio.io/istio/pkg/kube/inject"
 	"istio.io/istio/tests/e2e/framework"
 	"istio.io/istio/tests/util"
+	"istio.io/pkg/log"
 )
 
 const (
@@ -285,16 +285,16 @@ func (c *deployableConfig) Teardown() error {
 
 // Teardown deletes the deployed configuration.
 func (c *deployableConfig) TeardownNoDelay() error {
-	var err error
+	var err *multierror.Error
 	for _, yamlFile := range c.applied {
-		err = multierr.Append(err, util.KubeDelete(c.Namespace, yamlFile, c.kubeconfig))
+		err = multierror.Append(err, util.KubeDelete(c.Namespace, yamlFile, c.kubeconfig))
 	}
 	// Restore configs that was removed
 	for _, yaml := range c.removed {
-		err = multierr.Append(err, util.KubeApplyContents(c.Namespace, yaml, c.kubeconfig))
+		err = multierror.Append(err, util.KubeApplyContents(c.Namespace, yaml, c.kubeconfig))
 	}
 	c.applied = []string{}
-	return err
+	return err.ErrorOrNil()
 }
 
 func (c *deployableConfig) propagationDelay() time.Duration {
@@ -346,7 +346,7 @@ func (t *testConfig) Teardown() (err error) {
 	for _, ec := range t.extraConfig {
 		e := ec.Teardown()
 		if e != nil {
-			err = multierr.Append(err, e)
+			err = multierror.Append(err, e)
 		}
 	}
 	return
@@ -364,6 +364,8 @@ func getApps() []framework.App {
 		getApp("d", "d", 1, 80, 8080, 90, 9090, 70, 7070, "per-svc-auth", true, false, true, true),
 		getApp("headless", "headless", 1, 80, 8080, 10090, 19090, 70, 7070, "unversioned", true, true, true, true),
 		getStatefulSet("statefulset", 19090, true),
+
+		getJob("test-job", true),
 	}
 }
 
@@ -376,8 +378,8 @@ func getApp(deploymentName, serviceName string, replicas, port1, port2, port3, p
 	return framework.App{
 		AppYamlTemplate: "testdata/app.yaml.tmpl",
 		Template: map[string]string{
-			"Hub":             tc.Kube.PilotHub(),
-			"Tag":             tc.Kube.PilotTag(),
+			"Hub":             tc.Kube.AppHub(),
+			"Tag":             tc.Kube.AppTag(),
 			"service":         serviceName,
 			"deployment":      deploymentName,
 			"replicas":        strconv.Itoa(replicas),
@@ -388,7 +390,6 @@ func getApp(deploymentName, serviceName string, replicas, port1, port2, port3, p
 			"port5":           strconv.Itoa(port5),
 			"port6":           strconv.Itoa(port6),
 			"version":         version,
-			"istioNamespace":  tc.Kube.Namespace,
 			"injectProxy":     strconv.FormatBool(injectProxy),
 			"headless":        strconv.FormatBool(headless),
 			"serviceAccount":  strconv.FormatBool(serviceAccount),
@@ -406,13 +407,25 @@ func getStatefulSet(service string, port int, injectProxy bool) framework.App {
 	return framework.App{
 		AppYamlTemplate: "testdata/statefulset.yaml.tmpl",
 		Template: map[string]string{
-			"Hub":             tc.Kube.PilotHub(),
-			"Tag":             tc.Kube.PilotTag(),
+			"Hub":             tc.Kube.AppHub(),
+			"Tag":             tc.Kube.AppTag(),
 			"service":         service,
 			"port":            strconv.Itoa(port),
 			"istioNamespace":  tc.Kube.Namespace,
 			"injectProxy":     strconv.FormatBool(injectProxy),
 			"ImagePullPolicy": tc.Kube.ImagePullPolicy(),
+		},
+		KubeInject: injectProxy,
+	}
+}
+
+func getJob(jobName string, injectProxy bool) framework.App {
+
+	// Return the config.
+	return framework.App{
+		AppYamlTemplate: "testdata/job.yaml",
+		Template: map[string]string{
+			"name": jobName,
 		},
 		KubeInject: injectProxy,
 	}

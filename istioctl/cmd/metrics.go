@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -29,8 +29,8 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/spf13/cobra"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/istioctl/pkg/kubernetes"
+	"istio.io/pkg/log"
 )
 
 var (
@@ -59,8 +59,14 @@ istioctl experimental metrics productpage-v1
 istioctl experimental metrics productpage-v1.foo reviews-v1.bar ratings-v1.baz
 `,
 		// nolint: goimports
-		Aliases:               []string{"m"},
-		Args:                  cobra.MinimumNArgs(1),
+		Aliases: []string{"m"},
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				cmd.Println(cmd.UsageString())
+				return fmt.Errorf("metrics requires workload name")
+			}
+			return nil
+		},
 		RunE:                  run,
 		DisableFlagsInUseLine: true,
 	}
@@ -79,7 +85,7 @@ type workloadMetrics struct {
 	p50Latency, p90Latency, p99Latency time.Duration
 }
 
-func run(_ *cobra.Command, args []string) error {
+func run(c *cobra.Command, args []string) error {
 	log.Debugf("metrics command invoked for workload(s): %v", args)
 
 	client, err := clientExecFactory(kubeconfig, configContext)
@@ -98,7 +104,7 @@ func run(_ *cobra.Command, args []string) error {
 
 	// only use the first pod in the list
 	promPod := pl.Items[0]
-	fw, err := client.BuildPortForwarder(promPod.Name, istioNamespace, port, 9090)
+	fw, err := client.BuildPortForwarder(promPod.Name, istioNamespace, 0, 9090)
 	if err != nil {
 		return fmt.Errorf("could not build port forwarder for prometheus: %v", err)
 	}
@@ -106,12 +112,12 @@ func run(_ *cobra.Command, args []string) error {
 	if err = kubernetes.RunPortForwarder(fw, func(fw *kubernetes.PortForward) error {
 		log.Debugf("port-forward to prometheus pod ready")
 
-		promAPI, err := prometheusAPI(port)
+		promAPI, err := prometheusAPI(fw.LocalPort)
 		if err != nil {
 			return err
 		}
 
-		printHeader()
+		printHeader(c.OutOrStdout())
 
 		workloads := args
 		for _, workload := range workloads {
@@ -120,8 +126,9 @@ func run(_ *cobra.Command, args []string) error {
 				return fmt.Errorf("could not build metrics for workload '%s': %v", workload, err)
 			}
 
-			printMetrics(sm)
+			printMetrics(c.OutOrStdout(), sm)
 		}
+		close(fw.StopChannel)
 		return nil
 	}); err != nil {
 		return fmt.Errorf("failure running port forward process: %v", err)
@@ -195,7 +202,7 @@ func metrics(promAPI promv1.API, workload string) (workloadMetrics, error) {
 
 func vectorValue(promAPI promv1.API, query string) (float64, error) {
 	log.Debugf("executing query: %s", query)
-	val, err := promAPI.Query(context.Background(), query, time.Now())
+	val, _, err := promAPI.Query(context.Background(), query, time.Now())
 	if err != nil {
 		return 0, fmt.Errorf("query() failure for '%s': %v", query, err)
 	}
@@ -212,14 +219,14 @@ func vectorValue(promAPI promv1.API, query string) (float64, error) {
 	}
 }
 
-func printHeader() {
-	w := tabwriter.NewWriter(os.Stdout, 13, 1, 2, ' ', tabwriter.AlignRight)
+func printHeader(writer io.Writer) {
+	w := tabwriter.NewWriter(writer, 13, 1, 2, ' ', tabwriter.AlignRight)
 	fmt.Fprintf(w, "%40s\tTOTAL RPS\tERROR RPS\tP50 LATENCY\tP90 LATENCY\tP99 LATENCY\t\n", "WORKLOAD")
 	_ = w.Flush()
 }
 
-func printMetrics(wm workloadMetrics) {
-	w := tabwriter.NewWriter(os.Stdout, 13, 1, 2, ' ', tabwriter.AlignRight)
+func printMetrics(writer io.Writer, wm workloadMetrics) {
+	w := tabwriter.NewWriter(writer, 13, 1, 2, ' ', tabwriter.AlignRight)
 	fmt.Fprintf(w, "%40s\t", wm.workload)
 	fmt.Fprintf(w, "%.3f\t", wm.totalRPS)
 	fmt.Fprintf(w, "%.3f\t", wm.errorRPS)

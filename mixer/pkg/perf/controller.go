@@ -23,7 +23,7 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 
-	"istio.io/common/pkg/log"
+	"istio.io/pkg/log"
 )
 
 // TODO(lichuqiang): modify defaultTimeout accordingly.
@@ -84,7 +84,7 @@ func (c *Controller) initializeClients(address string, setup *Setup) error {
 	for i, conn := range c.clients {
 		var bytes []byte
 		var err error
-		bytes, err = marshallLoad(&setup.Loads[i])
+		bytes, err = marshalLoad(&setup.Loads[i])
 		if err != nil {
 			return err
 		}

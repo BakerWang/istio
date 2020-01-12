@@ -15,10 +15,13 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
-	"istio.io/common/pkg/log"
+	"istio.io/istio/istioctl/pkg/util/handlers"
 	"istio.io/istio/pilot/pkg/serviceregistry/kube"
+	"istio.io/pkg/log"
 )
 
 var (
@@ -27,7 +30,13 @@ var (
 		Short: "De-registers a service instance",
 		Example: `# de-register an endpoint 172.17.0.2 from service my-svc:
 istioctl deregister my-svc 172.17.0.2`,
-		Args: cobra.MinimumNArgs(2),
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 2 {
+				cmd.Println(cmd.UsageString())
+				return fmt.Errorf("deregister requires service name and endpoint")
+			}
+			return nil
+		},
 		RunE: func(c *cobra.Command, args []string) error {
 			svcName := args[0]
 			ip := args[1]
@@ -37,7 +46,7 @@ istioctl deregister my-svc 172.17.0.2`,
 			if err != nil {
 				return err
 			}
-			ns, _ := handleNamespaces(namespace)
+			ns := handlers.HandleNamespace(namespace, defaultNamespace)
 			return kube.DeRegisterEndpoint(client, ns, svcName, ip)
 		},
 	}

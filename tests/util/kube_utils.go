@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,14 +34,18 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/net/context/ctxhttp"
 
-	"istio.io/common/pkg/log"
+	"istio.io/pkg/log"
+
+	"istio.io/istio/istioctl/pkg/multicluster"
+	"istio.io/istio/pkg/kube/secretcontroller"
 )
 
 const (
 	podFailedGet = "Failed_Get"
 	// The index of STATUS field in kubectl CLI output.
-	statusField          = 2
-	defaultClusterSubnet = "24"
+	statusField            = 2
+	defaultClusterSubnet   = "24"
+	defaultClusterSubnetv6 = "128"
 
 	// NodePortServiceType NodePort type of Kubernetes Service
 	NodePortServiceType = "NodePort"
@@ -193,7 +198,7 @@ func KubeGetYaml(namespace, resource, name string, kubeconfig string) (string, e
 	if namespace == "" {
 		namespace = "default"
 	}
-	cmd := fmt.Sprintf("kubectl get %s %s -n %s -o yaml --kubeconfig=%s --export", resource, name, namespace, kubeconfig)
+	cmd := fmt.Sprintf("kubectl get %s %s -n %s -o yaml --kubeconfig=%s", resource, name, namespace, kubeconfig)
 
 	return Shell(cmd)
 }
@@ -258,9 +263,18 @@ func GetClusterSubnet(kubeconfig string) (string, error) {
 	}
 	parts := strings.Split(cidr, "/")
 	if len(parts) != 2 {
-		// TODO(nmittler): Need a way to get the subnet on minikube. For now, just return a default value.
-		log.Info("unable to identify cluster subnet. running on minikube?")
-		return defaultClusterSubnet, nil
+		ip, _ := GetKubeMasterIP(kubeconfig)
+		addr := net.ParseIP(ip)
+		if addr == nil {
+			return "", fmt.Errorf("unable to determine the kubernetes service IP and cluster subnet")
+		}
+		if addr.To4() != nil {
+			// TODO(nmittler): Need a way to get the subnet on minikube. For now, just return a default value.
+			log.Info("unable to identify cluster subnet. running on minikube?")
+			return defaultClusterSubnet, nil
+		}
+		log.Info("unable to identify IPv6 cluster subnet")
+		return defaultClusterSubnetv6, nil
 	}
 	return parts[1], nil
 }
@@ -348,9 +362,23 @@ func getServiceLoadBalancer(name, namespace, kubeconfig string) (string, error) 
 		return "", err
 	}
 
+	if ip == "" {
+		// This block is used for docker-desktop kubernetes
+		ip, err = ShellSilent(
+			"kubectl get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[*].hostname}' --kubeconfig=%s",
+			name, namespace, kubeconfig)
+
+		if err != nil {
+			return "", err
+		}
+		if ip == "localhost" {
+			ip = "127.0.0.1"
+		}
+	}
+
 	ip = strings.Trim(ip, "'")
-	ri := regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$`)
-	if ri.FindString(ip) == "" {
+	addr := net.ParseIP(ip)
+	if addr == nil {
 		return "", errors.New("ingress ip not available yet")
 	}
 
@@ -367,8 +395,8 @@ func getServiceNodePort(serviceName, podLabel, namespace, kubeconfig string) (st
 	}
 
 	ip = strings.Trim(ip, "'")
-	ri := regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$`)
-	if ri.FindString(ip) == "" {
+	addr := net.ParseIP(ip)
+	if addr == nil {
 		return "", fmt.Errorf("the ip of %s is not available yet", serviceName)
 	}
 
@@ -377,6 +405,9 @@ func getServiceNodePort(serviceName, podLabel, namespace, kubeconfig string) (st
 		return "", err
 	}
 
+	if addr.To4() == nil {
+		return "[" + ip + "]" + ":" + port, nil
+	}
 	return ip + ":" + port, nil
 }
 
@@ -445,6 +476,20 @@ func GetAppPods(n string, kubeconfig string) (map[string][]string, error) {
 		m[app] = append(m[app], podName)
 	}
 	return m, nil
+}
+
+// IsJobSucceeded checks whether a job for the given namespace succeeded
+func IsJobSucceeded(n, name string, kubeconfig string) (bool, error) {
+	succeed, err := Shell("kubectl -n %s get job  %s -o jsonpath='{.status.succeeded}' --kubeconfig=%s", n, name, kubeconfig)
+	if err != nil {
+		log.Warnf("could not get %s job: %v", name, err)
+		return false, err
+	}
+
+	if len(succeed) != 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 // GetPodLabelValues gets a map of pod name to label value for the given label and namespace
@@ -555,8 +600,6 @@ func PodExec(n, pod, container, command string, muteOutput bool, kubeconfig stri
 
 // CreateTLSSecret creates a secret from the provided cert and key files
 func CreateTLSSecret(secretName, n, keyFile, certFile string, kubeconfig string) (string, error) {
-	//cmd := fmt.Sprintf("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
-	//return Shell(cmd)
 	return Shell("kubectl create secret tls %s -n %s --key %s --cert %s --kubeconfig=%s", secretName, n, keyFile, certFile, kubeconfig)
 }
 
@@ -583,7 +626,7 @@ func CheckDeployment(ctx context.Context, namespace, deployment string, kubeconf
 		// This can be deployed by previous tests, but doesn't complete currently, blocking the test.
 		return nil
 	}
-	errc := make(chan error)
+	errc := make(chan error, 1)
 	go func() {
 		if _, err := ShellMuteOutput("kubectl -n %s rollout status %s --kubeconfig=%s", namespace, deployment, kubeconfig); err != nil {
 			errc <- fmt.Errorf("%s in namespace %s failed", deployment, namespace)
@@ -667,12 +710,21 @@ func FetchAndSaveClusterLogs(namespace string, tempDir string, kubeconfig string
 		// Log the description; if we fail to get the logs it may help
 		describeCmd := fmt.Sprintf("kubectl -n %s describe pod %s --kubeconfig=%s",
 			namespace, pod, kubeconfig)
-		describeOutput, errDescribe := Shell(describeCmd)
+		describeOutput, errDescribe := ShellMuteOutput(describeCmd)
 		if errDescribe != nil {
 			log.Warnf("Error getting description for pod %s: %v\n", pod, errDescribe)
 			// don't bail, keep going
 		} else {
-			log.Info(describeOutput)
+			filePath := filepath.Join(tempDir, fmt.Sprintf("%s_describe.log", pod))
+			f, err := os.Create(filePath)
+			if err != nil {
+				log.Warnf("Error creating %s for pod %s: %v\n", filePath, pod, err)
+				return err
+			}
+			if _, err = f.WriteString(fmt.Sprintf("%s\n", describeOutput)); err != nil {
+				log.Warnf("Error writing log dump to %s for pod %s/%s: %v\n", filePath, namespace, pod, err)
+				return err
+			}
 		}
 
 		cmd := fmt.Sprintf(
@@ -806,10 +858,10 @@ func CheckDeploymentsReady(ns string, kubeconfig string) (int, error) {
 	notReady := 0
 	for _, line := range strings.Split(out, "\n") {
 		flds := strings.Fields(line)
-		if len(flds) < 2 {
+		if len(flds) < 1 {
 			continue
 		}
-		if flds[1] == "0" { // no replicas ready
+		if len(flds) == 1 || flds[1] == "0" { // no replicas ready
 			notReady++
 		}
 	}
@@ -865,34 +917,56 @@ func CheckPodRunning(n, name string, kubeconfig string) error {
 
 // CreateMultiClusterSecret will create the secret associated with the remote cluster
 func CreateMultiClusterSecret(namespace string, remoteKubeConfig string, localKubeConfig string) error {
-	const (
-		secretLabel = "istio/multiCluster"
-		labelValue  = "true"
-	)
-	secretName := filepath.Base(remoteKubeConfig)
-
-	_, err := ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s", secretName, remoteKubeConfig, namespace, localKubeConfig)
-	if err != nil {
-		log.Infof("Failed to create secret %s\n", secretName)
-		return err
-	}
-	log.Infof("Secret %s created\n", secretName)
-
-	// label the secret for use as istio/multiCluster config
-	_, err = ShellMuteOutput("kubectl label secret %s %s=%s -n %s --kubeconfig=%s",
-		secretName, secretLabel, labelValue, namespace, localKubeConfig)
+	currentContext, err := ShellMuteOutput("kubectl --kubeconfig=%s config current-context", remoteKubeConfig)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Secret %s labeled with %s=%s\n", secretName, secretLabel, labelValue)
+	currentContext = strings.Trim(currentContext, "\n")
+
+	env, err := multicluster.NewEnvironment(remoteKubeConfig, currentContext, os.Stdout, os.Stderr)
+	if err != nil {
+		return err
+	}
+
+	opts := multicluster.RemoteSecretOptions{
+		ServiceAccountName: "istio-multi",
+		AuthType:           multicluster.RemoteSecretAuthTypeBearerToken,
+		KubeOptions: multicluster.KubeOptions{
+			Namespace:  namespace,
+			Context:    currentContext,
+			Kubeconfig: remoteKubeConfig,
+		},
+	}
+	config, err := multicluster.CreateRemoteSecret(opts, env)
+	if err != nil {
+		return err
+	}
+	secret, err := ioutil.TempFile("", "")
+	if err != nil {
+		return err
+	}
+	if _, err = secret.WriteString(config); err != nil {
+		return err
+	}
+	if err := secret.Close(); err != nil {
+		return err
+	}
+	log.Infof("Created multi-cluster secret %q for cluster %v", secret.Name(), remoteKubeConfig)
+
+	if _, err := ShellMuteOutput("kubectl --kubeconfig=%v -n %v apply -f %v", localKubeConfig, namespace, secret.Name()); err != nil {
+		return err
+	}
+
+	log.Infof("Secret for cluster %v created in cluster %v\n", remoteKubeConfig, localKubeConfig)
 	return nil
 }
 
 // DeleteMultiClusterSecret delete the remote cluster secret
 func DeleteMultiClusterSecret(namespace string, remoteKubeConfig string, localKubeConfig string) error {
 	secretName := filepath.Base(remoteKubeConfig)
-	_, err := ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", secretName, namespace, localKubeConfig)
+	_, err := ShellMuteOutput("kubectl delete secret -n %s --kubeconfig=%s -l %v=true",
+		namespace, localKubeConfig, secretcontroller.MultiClusterSecretLabel)
 	if err != nil {
 		log.Errorf("Failed to delete secret %s: %v", secretName, err)
 	} else {

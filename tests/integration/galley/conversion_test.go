@@ -19,20 +19,20 @@ import (
 	"testing"
 	"time"
 
+	"istio.io/istio/galley/pkg/config/schema"
+	"istio.io/istio/galley/pkg/config/schema/collections"
+	"istio.io/istio/galley/testdatasets/conversion"
 	"istio.io/istio/pkg/test/framework/components/environment"
 	"istio.io/istio/pkg/test/framework/components/namespace"
-	"istio.io/istio/pkg/test/framework/label"
 	"istio.io/istio/pkg/test/framework/resource"
 
-	"istio.io/istio/galley/pkg/metadata"
-	"istio.io/istio/galley/pkg/testing/testdata"
 	"istio.io/istio/pkg/test/framework"
 	"istio.io/istio/pkg/test/framework/components/galley"
 	"istio.io/istio/pkg/test/util/structpath"
 )
 
 func TestConversion(t *testing.T) {
-	dataset, err := testdata.Load()
+	dataset, err := conversion.Load()
 	if err != nil {
 		t.Fatalf("Error loading data set: %v", err)
 	}
@@ -48,7 +48,6 @@ func TestConversion(t *testing.T) {
 			// component
 
 			framework.NewTest(t).
-				Label(label.Presubmit).
 				RequiresEnvironment(environment.Native).
 				Run(func(ctx framework.TestContext) {
 
@@ -59,9 +58,9 @@ func TestConversion(t *testing.T) {
 						// Do init for the first set. Use Meshconfig file in this set.
 						if i == 0 {
 							if fset.HasMeshConfigFile() {
-								mc, err := fset.LoadMeshConfigFile()
-								if err != nil {
-									t.Fatalf("Error loading Mesh config file: %v", err)
+								mc, er := fset.LoadMeshConfigFile()
+								if er != nil {
+									t.Fatalf("Error loading Mesh config file: %v", er)
 								}
 
 								cfg.MeshConfig = string(mc)
@@ -85,13 +84,16 @@ func TestConversion(t *testing.T) {
 	}
 }
 
-func runTest(t *testing.T, ctx resource.Context, fset *testdata.FileSet, gal galley.Instance) {
+func runTest(t *testing.T, ctx resource.Context, fset *conversion.FileSet, gal galley.Instance) {
 	input, err := fset.LoadInputFile()
 	if err != nil {
 		t.Fatalf("Unable to load input test data: %v", err)
 	}
 
-	ns := namespace.NewOrFail(t, ctx, "conv", true)
+	ns := namespace.NewOrFail(t, ctx, namespace.Config{
+		Prefix: "conv",
+		Inject: true,
+	})
 
 	expected, err := fset.LoadExpectedResources(ns.Name())
 	if err != nil {
@@ -114,7 +116,7 @@ func runTest(t *testing.T, ctx resource.Context, fset *testdata.FileSet, gal gal
 		var validator galley.SnapshotValidatorFunc
 
 		switch collection {
-		case metadata.IstioNetworkingV1alpha3SyntheticServiceentries.Collection.String():
+		case collections.IstioNetworkingV1Alpha3SyntheticServiceentries.Name().String():
 			// The synthetic service entry includes the resource versions for service and
 			// endpoints as annotations, which are volatile. This prevents us from using
 			// golden files for validation. Instead, we use the structpath library to
@@ -134,15 +136,17 @@ func runTest(t *testing.T, ctx resource.Context, fset *testdata.FileSet, gal gal
 func syntheticServiceEntryValidator(ns string) galley.SnapshotValidatorFunc {
 	return galley.NewSingleObjectSnapshotValidator(ns, func(ns string, actual *galley.SnapshotObject) error {
 		v := structpath.ForProto(actual)
-		if err := v.Equals(metadata.IstioNetworkingV1alpha3SyntheticServiceentries.TypeURL.String(), "{.TypeURL}").
+		sp := schema.MustGet().AllCollections().MustFind(collections.IstioNetworkingV1Alpha3SyntheticServiceentries.Name().String())
+		typeURL := "type.googleapis.com/" + sp.Resource().Proto()
+		if err := v.Equals(typeURL, "{.TypeURL}").
 			Equals(fmt.Sprintf("%s/kube-dns", ns), "{.Metadata.name}").
 			Check(); err != nil {
 			return err
 		}
 
 		if err := v.Select("{.Metadata.annotations}").
-			Exists("{.['networking.istio.io/serviceVersion']}").
-			Exists("{.['networking.istio.io/endpointsVersion']}").
+			Exists("{.['networking.alpha.istio.io/serviceVersion']}").
+			Exists("{.['networking.alpha.istio.io/endpointsVersion']}").
 			Check(); err != nil {
 			return err
 		}
@@ -151,9 +155,9 @@ func syntheticServiceEntryValidator(ns string) galley.SnapshotValidatorFunc {
 		if err := v.Select("{.Body}").
 			Equals("10.43.240.10", "{.addresses[0]}").
 			Equals(fmt.Sprintf("kube-dns.%s.svc.cluster.local", ns), "{.hosts[0]}").
-			Equals(1, "{.location}").
-			Equals(1, "{.resolution}").
-			Equals(fmt.Sprintf("spiffe://cluster.local/ns/%s/sa/kube-dns", ns), "{.subject_alt_names[0]}").
+			Equals("MESH_INTERNAL", "{.location}").
+			Equals("STATIC", "{.resolution}").
+			Equals(fmt.Sprintf("spiffe://cluster.local/ns/%s/sa/kube-dns", ns), "{.subjectAltNames[0]}").
 			Check(); err != nil {
 			return err
 		}

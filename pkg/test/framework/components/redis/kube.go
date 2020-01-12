@@ -17,19 +17,19 @@ package redis
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	environ "istio.io/istio/pkg/test/env"
 	"istio.io/istio/pkg/test/framework/components/environment/kube"
 	"istio.io/istio/pkg/test/framework/components/namespace"
+	"istio.io/istio/pkg/test/framework/core/image"
 	"istio.io/istio/pkg/test/framework/resource"
 	"istio.io/istio/pkg/test/scopes"
-	"istio.io/istio/tests/util"
+	"istio.io/istio/pkg/test/util/tmpl"
 )
 
 const (
-	redisInstallDir  = "stable/redis"
-	redisInstallName = "redis-release"
-	redisNamespace   = "istio-redis"
+	redisNamespace = "istio-redis"
 )
 
 var (
@@ -61,7 +61,9 @@ func newKube(ctx resource.Context) (Instance, error) {
 		}
 	}()
 
-	c.ns, err = namespace.New(ctx, redisNamespace, false)
+	c.ns, err = namespace.New(ctx, namespace.Config{
+		Prefix: redisNamespace,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("could not create %s Namespace for Redis install; err:%v", redisNamespace, err)
 	}
@@ -74,19 +76,27 @@ func newKube(ctx resource.Context) (Instance, error) {
 		return nil, fmt.Errorf("failed to apply %s, err: %v", environ.ServiceAccountFilePath, err)
 	}
 
-	// deploy tiller, only if not already installed.
-	if err := util.HelmTillerRunning(); err != nil {
-		if err := util.HelmInit("tiller"); err != nil {
-			return nil, fmt.Errorf("failed to init helm tiller, err: %v", err)
-		}
-		if err := util.HelmTillerRunning(); err != nil {
-			return nil, fmt.Errorf("tiller failed to start, err: %v", err)
-		}
+	// apply redis YAML
+	s, err := image.SettingsFromCommandLine()
+	if err != nil {
+		return nil, err
 	}
 
-	setValue := "--set usePassword=false,persistence.enabled=false"
-	if err := util.HelmInstall(redisInstallDir, redisInstallName, "", c.ns.Name(), setValue); err != nil {
-		return nil, fmt.Errorf("helm install %s failed, setValue=%s, err: %v", redisInstallDir, setValue, err)
+	templateBytes, err := ioutil.ReadFile(environ.RedisInstallFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s, err: %v", environ.RedisInstallFilePath, err)
+	}
+
+	yamlContent, err := tmpl.Evaluate(string(templateBytes), map[string]interface{}{
+		"BitnamiHub":      s.BitnamiHub,
+		"ImagePullPolicy": s.PullPolicy,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to render %s, err: %v", environ.RedisInstallFilePath, err)
+	}
+
+	if err := env.ApplyContents(c.ns.Name(), yamlContent); err != nil {
+		return nil, fmt.Errorf("failed to apply rendered %s, err: %v", environ.RedisInstallFilePath, err)
 	}
 
 	fetchFn := c.env.NewPodFetch(c.ns.Name(), "app=redis")
@@ -104,7 +114,7 @@ func (c *kubeComponent) ID() resource.ID {
 // Close implements io.Closer.
 func (c *kubeComponent) Close() error {
 	scopes.CI.Infof("Deleting Redis Install")
-	_ = util.HelmDelete(redisInstallName)
+	_ = c.env.DeleteNamespace(redisNamespace)
 	_ = c.env.WaitForNamespaceDeletion(redisNamespace)
 	return nil
 }

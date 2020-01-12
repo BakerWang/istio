@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:lll
-//go:generate go run $GOPATH/src/istio.io/istio/mixer/tools/mixgen/main.go adapter -n prometheus-nosession -s=false  -c $GOPATH/src/istio.io/istio/mixer/adapter/prometheus/config/config.proto_descriptor   -t metric -o prometheus-nosession.yaml
+//go:generate go run $REPO_ROOT/mixer/tools/mixgen/main.go adapter -n prometheus-nosession -s=false  -c $REPO_ROOT/mixer/adapter/prometheus/config/config.proto_descriptor   -t metric -o prometheus-nosession.yaml
 
 package prometheus
 
@@ -32,9 +32,9 @@ import (
 	"istio.io/istio/mixer/adapter/prometheus"
 	"istio.io/istio/mixer/adapter/prometheus/config"
 	"istio.io/istio/mixer/pkg/adapter"
-	"istio.io/istio/mixer/pkg/pool"
 	"istio.io/istio/mixer/pkg/runtime/handler"
 	"istio.io/istio/mixer/template/metric"
+	"istio.io/pkg/pool"
 )
 
 type (

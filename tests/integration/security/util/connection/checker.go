@@ -17,7 +17,9 @@ package connection
 import (
 	"fmt"
 
+	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/test/framework/components/echo"
+	"istio.io/istio/pkg/test/util/retry"
 )
 
 // Checker is a test utility for testing the network connectivity between two endpoints.
@@ -47,4 +49,10 @@ func (c *Checker) Check() error {
 			c.From.Config().Service, c.Options.Target.Config().Service, c.Options.PortName, c.Options.Scheme)
 	}
 	return nil
+}
+
+func (c *Checker) CheckOrFail(t test.Failer) {
+	if err := retry.UntilSuccess(c.Check); err != nil {
+		t.Fatal(err)
+	}
 }

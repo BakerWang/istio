@@ -1,4 +1,4 @@
-// Copyright 2018 Istio Authors
+// Copyright 2019 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,269 +15,281 @@
 package model
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	"github.com/gogo/protobuf/types"
+	"istio.io/istio/pkg/config/mesh"
+
+	meshconfig "istio.io/api/mesh/v1alpha1"
+	securityBeta "istio.io/api/security/v1beta1"
+	selectorpb "istio.io/api/type/v1beta1"
+	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/config/schemas"
 )
 
-func TestParseJwksURI(t *testing.T) {
-	cases := []struct {
-		in                   string
-		expectedHostname     string
-		expectedPort         *Port
-		expectedUseSSL       bool
-		expectedErrorMessage string
-	}{
-		{
-			in:                   "foo.bar.com",
-			expectedErrorMessage: `URI scheme "" is not supported`,
-		},
-		{
-			in:                   "tcp://foo.bar.com:abc",
-			expectedErrorMessage: `URI scheme "tcp" is not supported`,
-		},
-		{
-			in:                   "http://foo.bar.com:abc",
-			expectedErrorMessage: `strconv.Atoi: parsing "abc": invalid syntax`,
-		},
-		{
-			in:               "http://foo.bar.com",
-			expectedHostname: "foo.bar.com",
-			expectedPort:     &Port{Name: "http", Port: 80},
-			expectedUseSSL:   false,
-		},
-		{
-			in:               "https://foo.bar.com",
-			expectedHostname: "foo.bar.com",
-			expectedPort:     &Port{Name: "https", Port: 443},
-			expectedUseSSL:   true,
-		},
-		{
-			in:               "http://foo.bar.com:1234",
-			expectedHostname: "foo.bar.com",
-			expectedPort:     &Port{Name: "http", Port: 1234},
-			expectedUseSSL:   false,
-		},
-		{
-			in:               "https://foo.bar.com:1234/secure/key",
-			expectedHostname: "foo.bar.com",
-			expectedPort:     &Port{Name: "https", Port: 1234},
-			expectedUseSSL:   true,
-		},
-	}
-	for _, c := range cases {
-		host, port, useSSL, err := ParseJwksURI(c.in)
-		if err != nil {
-			if c.expectedErrorMessage != err.Error() {
-				t.Errorf("ParseJwksURI(%s): expected error (%s), got (%v)", c.in, c.expectedErrorMessage, err)
-			}
-		} else {
-			if c.expectedErrorMessage != "" {
-				t.Errorf("ParseJwksURI(%s): expected error (%s), got no error", c.in, c.expectedErrorMessage)
-			}
-			if c.expectedHostname != host || !reflect.DeepEqual(c.expectedPort, port) || c.expectedUseSSL != useSSL {
-				t.Errorf("ParseJwksURI(%s): expected (%s, %#v, %v), got (%s, %#v, %v)",
-					c.in, c.expectedHostname, c.expectedPort, c.expectedUseSSL,
-					host, port, useSSL)
-			}
-		}
-	}
-}
+const (
+	rootNamespace = "istio-config"
+)
 
-func TestConstructSdsSecretConfig(t *testing.T) {
-	trustworthyMetaConfig := &v2alpha.FileBasedMetadataConfig{
-		SecretData: &core.DataSource{
-			Specifier: &core.DataSource_Filename{
-				Filename: K8sSATrustworthyJwtFileName,
-			},
-		},
-		HeaderKey: K8sSAJwtTokenHeaderKey,
-	}
-
-	normalMetaConfig := &v2alpha.FileBasedMetadataConfig{
-		SecretData: &core.DataSource{
-			Specifier: &core.DataSource_Filename{
-				Filename: K8sSAJwtFileName,
-			},
-		},
-		HeaderKey: K8sSAJwtTokenHeaderKey,
-	}
+func TestGetJwtPoliciesForWorkload(t *testing.T) {
+	policies := getTestAuthenticationPolicies(createTestConfigs(), t)
 
 	cases := []struct {
-		serviceAccount    string
-		sdsUdsPath        string
-		expected          *auth.SdsSecretConfig
-		useTrustworthyJwt bool
-		useNormalJwt      bool
-		metadata          map[string]string
+		name              string
+		workloadNamespace string
+		workloadLabels    labels.Collection
+		want              []*Config
 	}{
 		{
-			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected: &auth.SdsSecretConfig{
-				Name: "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: &core.ConfigSource{
-					ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-						ApiConfigSource: &core.ApiConfigSource{
-							ApiType: core.ApiConfigSource_GRPC,
-							GrpcServices: []*core.GrpcService{
-								{
-									TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-										GoogleGrpc: &core.GrpcService_GoogleGrpc{
-											TargetUri:          "/tmp/sdsuds.sock",
-											StatPrefix:         SDSStatPrefix,
-											ChannelCredentials: constructLocalChannelCredConfig(),
-											CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
-												constructGCECallCredConfig(),
-											},
-										},
-									},
-								},
-							},
-							RefreshDelay: nil,
-						},
+			name:              "Empty workload labels in foo",
+			workloadNamespace: "foo",
+			workloadLabels:    labels.Collection{},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "foo",
 					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
 				},
 			},
 		},
 		{
-			serviceAccount:    "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:        "/tmp/sdsuds.sock",
-			useTrustworthyJwt: true,
-			expected: &auth.SdsSecretConfig{
-				Name:      "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: constructsdsconfighelper(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey, trustworthyMetaConfig),
+			name:              "Empty workload labels in bar",
+			workloadNamespace: "bar",
+			workloadLabels:    labels.Collection{},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "bar",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
 			},
 		},
 		{
-			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			useNormalJwt:   true,
-			expected: &auth.SdsSecretConfig{
-				Name:      "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: constructsdsconfighelper(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey, normalMetaConfig),
+			name:              "Empty workload labels in baz",
+			workloadNamespace: "baz",
+			workloadLabels:    labels.Collection{},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
 			},
 		},
 		{
-			serviceAccount: "",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected:       nil,
-		},
-		{
-			serviceAccount: "",
-			sdsUdsPath:     "spiffe://cluster.local/ns/bar/sa/foo",
-			expected:       nil,
-		},
-	}
-
-	for _, c := range cases {
-		if got := ConstructSdsSecretConfig(c.serviceAccount, c.sdsUdsPath, c.useTrustworthyJwt, c.useNormalJwt, c.metadata); !reflect.DeepEqual(got, c.expected) {
-			t.Errorf("ConstructSdsSecretConfig: got(%#v) != want(%#v)\n", got, c.expected)
-		}
-	}
-}
-
-func TestConstructSdsSecretConfigForGatewayListener(t *testing.T) {
-	cases := []struct {
-		serviceAccount string
-		sdsUdsPath     string
-		expected       *auth.SdsSecretConfig
-	}{
-		{
-			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected: &auth.SdsSecretConfig{
-				Name: "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: &core.ConfigSource{
-					ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-						ApiConfigSource: &core.ApiConfigSource{
-							ApiType: core.ApiConfigSource_GRPC,
-							GrpcServices: []*core.GrpcService{
-								{
-									TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-										GoogleGrpc: &core.GrpcService_GoogleGrpc{
-											TargetUri:  "/tmp/sdsuds.sock",
-											StatPrefix: SDSStatPrefix,
-										},
-									},
-								},
+			name:              "Match workload labels in foo",
+			workloadNamespace: "foo",
+			workloadLabels:    labels.Collection{{"app": "httpbin", "version": "v1", "other": "labels"}},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "foo",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "with-selector",
+						Namespace: "foo",
+					},
+					Spec: &securityBeta.RequestAuthentication{
+						Selector: &selectorpb.WorkloadSelector{
+							MatchLabels: map[string]string{
+								"app":     "httpbin",
+								"version": "v1",
 							},
-							RefreshDelay: nil,
+						},
+					},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "global-with-selector",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{
+						Selector: &selectorpb.WorkloadSelector{
+							MatchLabels: map[string]string{
+								"app": "httpbin",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:              "Match workload labels in bar",
+			workloadNamespace: "bar",
+			workloadLabels:    labels.Collection{{"app": "httpbin", "version": "v1"}},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "bar",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "global-with-selector",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{
+						Selector: &selectorpb.WorkloadSelector{
+							MatchLabels: map[string]string{
+								"app": "httpbin",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:              "Paritial match workload labels in foo",
+			workloadNamespace: "foo",
+			workloadLabels:    labels.Collection{{"app": "httpbin"}},
+			want: []*Config{
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "foo",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "default",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{},
+				},
+				{
+					ConfigMeta: ConfigMeta{
+						Type:      "request-authentication",
+						Name:      "global-with-selector",
+						Namespace: "istio-config",
+					},
+					Spec: &securityBeta.RequestAuthentication{
+						Selector: &selectorpb.WorkloadSelector{
+							MatchLabels: map[string]string{
+								"app": "httpbin",
+							},
 						},
 					},
 				},
 			},
 		},
-		{
-			serviceAccount: "",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected:       nil,
-		},
-		{
-			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "",
-			expected:       nil,
-		},
 	}
 
-	for _, c := range cases {
-		if got := ConstructSdsSecretConfigForGatewayListener(c.serviceAccount, c.sdsUdsPath); !reflect.DeepEqual(got, c.expected) {
-			t.Errorf("ConstructSdsSecretConfig: got(%#v) != want(%#v)\n", got, c.expected)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := policies.GetJwtPoliciesForWorkload(tc.workloadNamespace, tc.workloadLabels); !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want %+v\n, but got %+v\n", printConfigs(tc.want), printConfigs(got))
+			}
+		})
+	}
+}
+
+func getTestAuthenticationPolicies(configs []*Config, t *testing.T) *AuthenticationPolicies {
+	configStore := newFakeStore()
+	for _, cfg := range configs {
+		log.Infof("add config %s\n", cfg.Name)
+		if _, err := configStore.Create(*cfg); err != nil {
+			t.Fatalf("getTestAuthenticationPolicies %v", err)
 		}
 	}
+	environment := &Environment{
+		IstioConfigStore: MakeIstioStore(configStore),
+		Watcher:          mesh.NewFixedWatcher(&meshconfig.MeshConfig{RootNamespace: rootNamespace}),
+	}
+	return initAuthenticationPolicies(environment)
 }
 
-func constructLocalChannelCredConfig() *core.GrpcService_GoogleGrpc_ChannelCredentials {
-	return &core.GrpcService_GoogleGrpc_ChannelCredentials{
-		CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
-			LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+func createTestConfig(name string, namespace string, selector *selectorpb.WorkloadSelector) *Config {
+	return &Config{
+		ConfigMeta: ConfigMeta{
+			Type: schemas.RequestAuthentication.Type, Name: name, Namespace: namespace},
+		Spec: &securityBeta.RequestAuthentication{
+			Selector: selector,
 		},
 	}
 }
 
-func constructGCECallCredConfig() *core.GrpcService_GoogleGrpc_CallCredentials {
-	return &core.GrpcService_GoogleGrpc_CallCredentials{
-		CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-			GoogleComputeEngine: &types.Empty{},
+func createTestConfigs() []*Config {
+	configs := make([]*Config, 0)
+
+	selector := &selectorpb.WorkloadSelector{
+		MatchLabels: map[string]string{
+			"app":     "httpbin",
+			"version": "v1",
 		},
 	}
-}
-
-func constructsdsconfighelper(tokenFileName, headerKey string, metaConfig *v2alpha.FileBasedMetadataConfig) *core.ConfigSource {
-	any := findOrMarshalFileBasedMetadataConfig(tokenFileName, headerKey, metaConfig)
-	return &core.ConfigSource{
-		ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-			ApiConfigSource: &core.ApiConfigSource{
-				ApiType: core.ApiConfigSource_GRPC,
-				GrpcServices: []*core.GrpcService{
-					{
-						TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-							GoogleGrpc: &core.GrpcService_GoogleGrpc{
-								TargetUri:              "/tmp/sdsuds.sock",
-								StatPrefix:             SDSStatPrefix,
-								CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",
-								ChannelCredentials:     constructLocalChannelCredConfig(),
-								CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
-									{
-										CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
-											FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-												Name: "envoy.grpc_credentials.file_based_metadata",
-												ConfigType: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-													TypedConfig: any},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				RefreshDelay: nil,
+	configs = append(configs, createTestConfig("default", rootNamespace, nil),
+		createTestConfig("global-with-selector", rootNamespace, &selectorpb.WorkloadSelector{
+			MatchLabels: map[string]string{
+				"app": "httpbin",
 			},
-		},
+		}),
+		createTestConfig("default", "foo", nil),
+		createTestConfig("default", "bar", nil),
+		createTestConfig("with-selector", "foo", selector))
+
+	return configs
+}
+
+func printConfigs(configs []*Config) string {
+	s := "[\n"
+	for _, c := range configs {
+		s += fmt.Sprintf("%+v\n", c)
 	}
+	return s + "]"
 }

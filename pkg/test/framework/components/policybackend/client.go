@@ -90,7 +90,7 @@ func (c *client) ExpectReportJSON(t test.Failer, expected ...string) {
 		for _, r := range reports {
 			as, err := m.MarshalToString(r)
 			if err != nil {
-				t.Fatalf("Failed marshalling to string: %v", err)
+				t.Fatalf("Failed marshaling to string: %v", err)
 			}
 			actual = append(actual, as)
 		}
@@ -150,9 +150,4 @@ func mapArrayToInterfaceArray(arr []map[string]interface{}) []interface{} {
 		result[i] = p
 	}
 	return result
-}
-
-// Reset implements internal.Resettable.
-func (c *client) Reset() error {
-	return c.controller.Reset()
 }

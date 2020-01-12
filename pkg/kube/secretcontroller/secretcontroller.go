@@ -29,12 +29,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/pkg/kube"
+	"istio.io/pkg/log"
 )
 
 const (
-	mcLabel    = "istio/multiCluster"
+	MultiClusterSecretLabel = "istio/multiCluster"
+
 	maxRetries = 5
 )
 
@@ -94,11 +95,11 @@ func NewController(
 	secretsInformer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(opts meta_v1.ListOptions) (runtime.Object, error) {
-				opts.LabelSelector = mcLabel + "=true"
+				opts.LabelSelector = MultiClusterSecretLabel + "=true"
 				return kubeclientset.CoreV1().Secrets(namespace).List(opts)
 			},
 			WatchFunc: func(opts meta_v1.ListOptions) (watch.Interface, error) {
-				opts.LabelSelector = mcLabel + "=true"
+				opts.LabelSelector = MultiClusterSecretLabel + "=true"
 				return kubeclientset.CoreV1().Secrets(namespace).Watch(opts)
 			},
 		},

@@ -29,9 +29,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	"istio.io/common/pkg/log"
-	"istio.io/common/pkg/probe"
 	"istio.io/istio/mixer/pkg/config/store"
+	"istio.io/pkg/log"
+	"istio.io/pkg/probe"
 )
 
 const (
@@ -120,7 +120,7 @@ func (s *Store) checkAndCreateCaches(
 
 	resources, err := d.ServerResourcesForGroupVersion(groupVersion)
 	if err != nil {
-		log.Debugf("Failed to obtain resources for CRD: %v", err)
+		log.Warnf("Failed to obtain resources for CRD: %v", err)
 		return kinds
 	}
 	s.cacheMutex.Lock()
@@ -129,6 +129,8 @@ func (s *Store) checkAndCreateCaches(
 			continue
 		}
 		if _, ok := kindsSet[res.Kind]; ok {
+			res.Group = ConfigAPIGroup
+			res.Version = ConfigAPIVersion
 			cl := lwBuilder.build(res)
 			informer := cache.NewSharedInformer(
 				&cache.ListWatch{

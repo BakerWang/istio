@@ -1,4 +1,19 @@
 #!/bin/bash
+
+# Copyright Istio Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Creates and configures a GKE cluster for running the Istio e2e tests.
 # Notes:
@@ -11,6 +26,8 @@ CLUSTER_NAME=${CLUSTER_NAME:-istio-e2e}
 CLUSTER_VERSION=${CLUSTER_VERSION}
 MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-4}
 NUM_NODES=${NUM_NODES:-3}
+# Store the previous value (which may have been unset) so we can restore it on cleanup
+OLD_USE_CLIENT_CERT=$(gcloud config list 2>/dev/null | grep use_client_certificate | cut -d' ' -f3)
 
 function usage() {
   echo "${0} -p PROJECT [-z ZONE] [-c CLUSTER_NAME] [-v CLUSTER_VERSION] [-m MACHINE_TYPE] [-n NUM_NODES]"
@@ -77,8 +94,12 @@ set -o pipefail
 set -x # echo on
 
 function cleanup {
-  # Re-enable certificates.
-  gcloud config set container/use_client_certificate True
+  # Reset certificate config.
+  if [ -z "$OLD_USE_CLIENT_CERT" ]; then
+    gcloud config unset container/use_client_certificate
+  else
+    gcloud config set container/use_client_certificate "$OLD_USE_CLIENT_CERT"
+  fi
 }
 
 # Run cleanup before we exit.

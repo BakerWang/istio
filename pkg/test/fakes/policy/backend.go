@@ -14,7 +14,8 @@
 
 package policy
 
-//go:generate $GOPATH/src/istio.io/istio/bin/protoc.sh --gogo_out=plugins=grpc:. controller.proto
+//nolint: lll
+//go:generate $REPO_ROOT/bin/protoc.sh --gogoslick_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types:. -I. controller.proto
 
 import (
 	"context"
@@ -23,19 +24,20 @@ import (
 	"sync"
 	"time"
 
-	google_rpc "github.com/gogo/googleapis/google/rpc"
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
+	google_rpc "istio.io/gogo-genproto/googleapis/google/rpc"
+
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	istio_mixer_adapter_model_v1beta11 "istio.io/api/mixer/adapter/model/v1beta1"
 	policy "istio.io/api/policy/v1beta1"
-	"istio.io/common/pkg/log"
 	"istio.io/istio/mixer/pkg/status"
 	"istio.io/istio/mixer/template/checknothing"
 	"istio.io/istio/mixer/template/metric"
 	"istio.io/istio/mixer/test/keyval"
+	"istio.io/pkg/log"
 )
 
 const (

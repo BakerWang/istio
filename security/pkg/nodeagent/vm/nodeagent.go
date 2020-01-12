@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"time"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/security/pkg/caclient"
 	"istio.io/istio/security/pkg/caclient/protocol"
 	pkiutil "istio.io/istio/security/pkg/pki/util"
 	"istio.io/istio/security/pkg/platform"
 	"istio.io/istio/security/pkg/util"
 	pb "istio.io/istio/security/proto"
+	"istio.io/pkg/log"
 )
 
 // The real node agent implementation. This implements the "Start" function
@@ -68,7 +68,7 @@ func (na *nodeAgentInternal) Start() error {
 
 		resp, err := na.caProtocol.SendCSR(req)
 		if err == nil && resp != nil && resp.IsApproved {
-			waitTime, ttlErr := na.certUtil.GetWaitTime(resp.SignedCert, time.Now())
+			waitTime, ttlErr := na.certUtil.GetWaitTime(resp.SignedCert, time.Now(), time.Duration(0))
 			if ttlErr != nil {
 				log.Errorf("Error getting TTL from approved cert: %v", ttlErr)
 				success = false

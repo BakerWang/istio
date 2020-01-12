@@ -13,8 +13,8 @@
 // limitations under the License.
 
 // nolint: lll
-//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a mixer/adapter/kubernetesenv/config/config.proto -x "-n kubernetesenv"
-//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -t mixer/adapter/kubernetesenv/template/template.proto
+//go:generate $REPO_ROOT/bin/mixer_codegen.sh -a mixer/adapter/kubernetesenv/config/config.proto -x "-n kubernetesenv"
+//go:generate $REPO_ROOT/bin/mixer_codegen.sh -t mixer/adapter/kubernetesenv/template/template.proto
 
 // Package kubernetesenv provides functionality to adapt mixer behavior to the
 // kubernetes environment. Primarily, it is used to generate values as part
@@ -38,12 +38,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"istio.io/common/pkg/env"
 	"istio.io/istio/mixer/adapter/kubernetesenv/config"
 	ktmpl "istio.io/istio/mixer/adapter/kubernetesenv/template"
 	"istio.io/istio/mixer/adapter/metadata"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/pkg/kube/secretcontroller"
+	"istio.io/pkg/env"
 )
 
 const (
@@ -55,6 +55,8 @@ const (
 	defaultRefreshPeriod = 5 * time.Minute
 
 	defaultClusterRegistriesNamespace = "istio-system"
+
+	mixerClusterControllerPrefix = "mixer-cluster-"
 )
 
 var (
@@ -73,7 +75,8 @@ type (
 		sync.Mutex
 		controllers map[string]cacheController
 
-		kubeHandler *handler
+		kubeHandler             *handler
+		multiClusterWatcherInit sync.Once
 	}
 
 	handler struct {
@@ -95,8 +98,9 @@ var _ ktmpl.HandlerBuilder = &builder{}
 
 // GetInfo returns the Info associated with this adapter implementation.
 func GetInfo() adapter.Info {
+	singletonBuilder := newBuilder(newKubernetesClient)
 	info := metadata.GetInfo("kubernetesenv")
-	info.NewBuilder = func() adapter.HandlerBuilder { return newBuilder(newKubernetesClient) }
+	info.NewBuilder = func() adapter.HandlerBuilder { return singletonBuilder }
 	return info
 }
 
@@ -110,7 +114,7 @@ func (b *builder) Validate() (ce *adapter.ConfigErrors) {
 	return
 }
 
-var kubeConfigVar = env.RegisterStringVar("KUBECONFIG", "", "")
+var kubeConfigVar = env.RegisterStringVar("KUBECONFIG", "", "Path for a kubeconfig file.")
 
 func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
 	paramsProto := b.adapterConfig
@@ -128,7 +132,7 @@ func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, 
 	// provide this basic functionality before.
 	b.Lock()
 	defer b.Unlock()
-	_, found := b.controllers[path]
+	_, found := b.controllers[mixerClusterControllerPrefix+path]
 	if !found {
 		clientset, err := b.newClientFn(path, env)
 		if err != nil {
@@ -138,8 +142,8 @@ func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, 
 		if err != nil {
 			return nil, fmt.Errorf("could not create new cache controller: %v", err)
 		}
-		controllers[path] = controller
-		b.controllers[path] = controller
+		controllers[mixerClusterControllerPrefix+path] = controller
+		b.controllers[mixerClusterControllerPrefix+path] = controller
 	} else {
 		for clusterID := range b.controllers {
 			controllers[clusterID] = b.controllers[clusterID]
@@ -156,8 +160,16 @@ func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, 
 	b.kubeHandler = &kubeHandler
 
 	if !found {
-		if err := initMultiClusterSecretController(b, path, env); err != nil {
-			return nil, fmt.Errorf("could not create remote controllers: %v", err)
+		// only init a single watcher for multicluster secrets for a given Builder.
+		// if init fails, try again on next Build().
+		// This should prevent an ever-growing number of watchers for a Builder.
+		var initErr error
+		b.multiClusterWatcherInit.Do(func() {
+			initErr = initMultiClusterSecretController(b, path, env)
+		})
+		if initErr != nil {
+			b.multiClusterWatcherInit = sync.Once{}
+			return nil, fmt.Errorf("could not create remote controllers: %v", initErr)
 		}
 	}
 
@@ -186,9 +198,10 @@ func runNewController(b *builder, clientset k8s.Interface, env adapter.Env) (cac
 
 func newBuilder(clientFactory clientFactoryFn) *builder {
 	return &builder{
-		newClientFn:   clientFactory,
-		controllers:   make(map[string]cacheController),
-		adapterConfig: conf,
+		newClientFn:             clientFactory,
+		controllers:             make(map[string]cacheController),
+		adapterConfig:           conf,
+		multiClusterWatcherInit: sync.Once{},
 	}
 }
 
@@ -219,8 +232,10 @@ func (h *handler) GenerateKubernetesAttributes(ctx context.Context, inst *ktmpl.
 }
 
 func (h *handler) Close() error {
-	for clusterID := range h.builder.controllers {
-		_ = h.builder.deleteCacheController(clusterID)
+	for clusterID := range h.k8sCache {
+		if !strings.HasPrefix(clusterID, mixerClusterControllerPrefix) {
+			_ = h.builder.deleteCacheController(clusterID)
+		}
 	}
 	h.builder.Lock()
 	h.builder.kubeHandler = nil
@@ -251,16 +266,15 @@ func (h *handler) findPod(uid string) (cacheController, *v1.Pod, bool) {
 	return c, pod, found
 }
 
+//The name of workload may contain '.'
 func keyFromUID(uid string) string {
 	if ip := net.ParseIP(uid); ip != nil {
 		return uid
 	}
 	fullname := strings.TrimPrefix(uid, kubePrefix)
-	if strings.Contains(fullname, ".") {
-		parts := strings.Split(fullname, ".")
-		if len(parts) == 2 {
-			return key(parts[1], parts[0])
-		}
+	dotPos := strings.LastIndex(fullname, ".")
+	if dotPos != -1 {
+		return key(fullname[dotPos+1:], fullname[:dotPos])
 	}
 	return fullname
 }
@@ -389,7 +403,7 @@ func (b *builder) deleteCacheController(clusterID string) error {
 	return nil
 }
 
-var clusterNsVar = env.RegisterStringVar("POD_NAMESPACE", defaultClusterRegistriesNamespace, "")
+var clusterNsVar = env.RegisterStringVar("POD_NAMESPACE", defaultClusterRegistriesNamespace, "Namespace for the Mixer pod (Downward API).")
 
 func initMultiClusterSecretController(b *builder, kubeconfig string, env adapter.Env) (err error) {
 	var clusterNs string

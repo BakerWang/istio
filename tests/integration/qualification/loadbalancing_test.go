@@ -25,7 +25,6 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/pkg/test/framework"
 	"istio.io/istio/pkg/test/framework/components/bookinfo"
 	"istio.io/istio/pkg/test/framework/components/environment"
@@ -33,6 +32,7 @@ import (
 	"istio.io/istio/pkg/test/framework/components/ingress"
 	"istio.io/istio/pkg/test/framework/components/namespace"
 	"istio.io/istio/pkg/test/framework/components/prometheus"
+	"istio.io/pkg/log"
 )
 
 const (
@@ -62,7 +62,10 @@ func TestIngressLoadBalancing(t *testing.T) {
 
 	g := galley.NewOrFail(t, ctx, galley.Config{})
 
-	bookinfoNs, err := namespace.New(ctx, "istio-bookinfo", true)
+	bookinfoNs, err := namespace.New(ctx, namespace.Config{
+		Prefix: "istio-bookinfo",
+		Inject: true,
+	})
 	if err != nil {
 		t.Fatalf("Could not create istio-bookinfo Namespace; err:%v", err)
 	}
@@ -75,7 +78,7 @@ func TestIngressLoadBalancing(t *testing.T) {
 	g.ApplyConfigOrFail(
 		t,
 		d.Namespace(),
-		bookinfo.GetDestinationRuleConfigFile(t, ctx).LoadWithNamespaceOrFail(t, bookinfoNs.Name()),
+		bookinfo.GetDestinationRuleConfigFileOrFail(t, ctx).LoadWithNamespaceOrFail(t, bookinfoNs.Name()),
 		bookinfo.NetworkingVirtualServiceAllV1.LoadWithNamespaceOrFail(t, bookinfoNs.Name()),
 	)
 
@@ -96,8 +99,8 @@ func TestIngressLoadBalancing(t *testing.T) {
 	rangeEnd := time.Now()
 
 	// Gather the CPU usage across all of the ingress gateways.
-	query := `sum(rate(container_cpu_usage_seconds_total{pod_name=~'istio-ingressgateway-.*'}[1m])) by (pod_name)`
-	v, err := prom.API().QueryRange(context.Background(), query, v1.Range{
+	query := `sum(rate(container_cpu_usage_seconds_total{job='kubernetes-cadvisor', pod=~'istio-ingressgateway-.*'}[1m])) by (pod_name)`
+	v, _, err := prom.API().QueryRange(context.Background(), query, v1.Range{
 		Start: rangeStart,
 		End:   rangeEnd,
 		Step:  step,
@@ -169,13 +172,19 @@ func getCPUSamples(v model.Value, t *testing.T) []float64 {
 
 func sendTraffic(duration time.Duration, ing ingress.Instance, wg *sync.WaitGroup) {
 	timeout := time.After(duration)
+	endpointIP := ing.HTTPSAddress()
 	for {
 		select {
 		case <-timeout:
 			wg.Done()
 			return
 		default:
-			_, err := ing.Call("/productpage")
+			_, err := ing.Call(ingress.CallOptions{
+				Host:     "",
+				Path:     "/productpage",
+				CallType: ingress.PlainText,
+				Address:  endpointIP,
+			})
 			if err != nil {
 				log.Debugf("Send to Ingress failed: %v", err)
 			}

@@ -24,13 +24,13 @@ import (
 
 	"github.com/gogo/protobuf/types"
 
-	"istio.io/istio/pkg/mcp/source"
-	"istio.io/istio/pkg/mcp/testing/groups"
+	"istio.io/pkg/ctrlz"
+	"istio.io/pkg/ctrlz/fw"
 
-	"istio.io/common/pkg/ctrlz"
-	"istio.io/common/pkg/ctrlz/fw"
 	"istio.io/istio/pkg/mcp/snapshot"
+	"istio.io/istio/pkg/mcp/source"
 	mcptest "istio.io/istio/pkg/mcp/testing"
+	"istio.io/istio/pkg/mcp/testing/groups"
 )
 
 const testK8sCollection = "k8s/core/v1/nodes"
@@ -89,8 +89,8 @@ func testConfigJWithOneRequest(t *testing.T, baseURL string) {
 	}
 
 	exists = false
-	for _, collection := range m["Snapshots"].([]interface{}) {
-		if collection.(map[string]interface{})["Collection"].(string) == testK8sCollection {
+	for _, ss := range m["Snapshots"].([]interface{}) {
+		if ss.(map[string]interface{})["Collection"].(string) == testK8sCollection {
 			exists = true
 			break
 		}

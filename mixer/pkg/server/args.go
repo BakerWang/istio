@@ -19,9 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"istio.io/common/pkg/ctrlz"
-	"istio.io/common/pkg/log"
-	"istio.io/common/pkg/probe"
 	"istio.io/istio/mixer/pkg/adapter"
 	"istio.io/istio/mixer/pkg/config/store"
 	"istio.io/istio/mixer/pkg/loadshedding"
@@ -29,6 +26,9 @@ import (
 	"istio.io/istio/mixer/pkg/template"
 	"istio.io/istio/pkg/mcp/creds"
 	"istio.io/istio/pkg/tracing"
+	"istio.io/pkg/ctrlz"
+	"istio.io/pkg/log"
+	"istio.io/pkg/probe"
 )
 
 // Args contains the startup arguments to instantiate Mixer.
@@ -84,7 +84,7 @@ type Args struct {
 	// The introspection options to use
 	IntrospectionOptions *ctrlz.Options
 
-	// Address to use for Mixer's gRPC API. This setting supercedes the API port setting.
+	// Address to use for Mixer's gRPC API. This setting supersedes the API port setting.
 	APIAddress string
 
 	// Port to use for Mixer's gRPC API

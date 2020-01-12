@@ -19,10 +19,10 @@ import (
 	"reflect"
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcfilter "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
 	http_conn "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	xdsutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	xdsutil "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/networking/plugin"
@@ -39,39 +39,34 @@ func NewPlugin() plugin.Plugin {
 }
 
 // BuildHealthCheckFilter returns a HealthCheck filter.
-func buildHealthCheckFilter(probe *model.Probe, isXDSMarshalingToAnyEnabled bool) *http_conn.HttpFilter {
+func buildHealthCheckFilter(probe *model.Probe) *http_conn.HttpFilter {
 	config := &hcfilter.HealthCheck{
 		PassThroughMode: proto.BoolTrue,
-		Headers: []*envoy_api_v2_route.HeaderMatcher{
+		Headers: []*route.HeaderMatcher{
 			{
 				Name:                 ":path",
-				HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_ExactMatch{ExactMatch: probe.Path},
+				HeaderMatchSpecifier: &route.HeaderMatcher_ExactMatch{ExactMatch: probe.Path},
 			},
 		},
 	}
 
 	out := &http_conn.HttpFilter{
-		Name: xdsutil.HealthCheck,
-	}
-
-	if isXDSMarshalingToAnyEnabled {
-		out.ConfigType = &http_conn.HttpFilter_TypedConfig{TypedConfig: util.MessageToAny(config)}
-	} else {
-		out.ConfigType = &http_conn.HttpFilter_Config{Config: util.MessageToStruct(config)}
+		Name:       xdsutil.HealthCheck,
+		ConfigType: &http_conn.HttpFilter_TypedConfig{TypedConfig: util.MessageToAny(config)},
 	}
 
 	return out
 }
 
-func buildHealthCheckFilters(filterChain *plugin.FilterChain, probes model.ProbeList, endpoint *model.NetworkEndpoint, isXDSMarshalingToAnyEnabled bool) {
+func buildHealthCheckFilters(filterChain *plugin.FilterChain, probes model.ProbeList, endpoint *model.IstioEndpoint) {
 	for _, probe := range probes {
 		// Check that the probe matches the listener port. If not, then the probe will be handled
 		// as a management port and not traced. If the port does match, then we need to add a
 		// health check filter for the probe path, to ensure that health checks are not traced.
 		// If no probe port is defined, then port has not specifically been defined, so assume filter
 		// needs to be applied.
-		if probe.Port == nil || probe.Port.Port == endpoint.Port {
-			filter := buildHealthCheckFilter(probe, isXDSMarshalingToAnyEnabled)
+		if probe.Port == nil || probe.Port.Port == int(endpoint.EndpointPort) {
+			filter := buildHealthCheckFilter(probe)
 			if !containsHTTPFilter(filterChain.HTTP, filter) {
 				filterChain.HTTP = append(filterChain.HTTP, filter)
 			}
@@ -116,17 +111,20 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 		return fmt.Errorf("listener not defined in mutable %v", mutable)
 	}
 
-	isXDSMarshalingToAnyEnabled := util.IsXDSMarshalingToAnyEnabled(in.Node)
-
 	for i := range mutable.Listener.FilterChains {
-		if in.ListenerProtocol == plugin.ListenerProtocolHTTP {
+		if mutable.FilterChains[i].ListenerProtocol == plugin.ListenerProtocolHTTP {
 			for _, ip := range in.Node.IPAddresses {
-				buildHealthCheckFilters(&mutable.FilterChains[i], in.Env.WorkloadHealthCheckInfo(ip),
-					&in.ServiceInstance.Endpoint, isXDSMarshalingToAnyEnabled)
+				buildHealthCheckFilters(&mutable.FilterChains[i], in.Push.WorkloadHealthCheckInfo(ip),
+					in.ServiceInstance.Endpoint)
 			}
 		}
 	}
 
+	return nil
+}
+
+// OnVirtualListener implments the Plugin interface method.
+func (Plugin) OnVirtualListener(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
 	return nil
 }
 
@@ -148,5 +146,10 @@ func (Plugin) OnOutboundCluster(in *plugin.InputParams, cluster *xdsapi.Cluster)
 
 // OnInboundFilterChains is called whenever a plugin needs to setup the filter chains, including relevant filter chain configuration.
 func (Plugin) OnInboundFilterChains(in *plugin.InputParams) []plugin.FilterChain {
+	return nil
+}
+
+// OnInboundPassthrough is called whenever a new passthrough filter chain is added to the LDS output.
+func (Plugin) OnInboundPassthrough(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
 	return nil
 }

@@ -12,10 +12,13 @@ import (
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	v1beta1 "istio.io/api/mixer/adapter/model/v1beta1"
 	v1beta11 "istio.io/api/policy/v1beta1"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -29,7 +32,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Request message for HandleQuota method.
 type HandleQuotaRequest struct {
@@ -57,16 +60,12 @@ func (m *HandleQuotaRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HandleQuotaRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HandleQuotaRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HandleQuotaRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HandleQuotaRequest.Merge(m, src)
@@ -99,16 +98,12 @@ func (m *InstanceMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceMsg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceMsg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceMsg.Merge(m, src)
@@ -145,16 +140,12 @@ func (m *Res1Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1Msg.Merge(m, src)
@@ -183,16 +174,12 @@ func (m *Res2Msg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2Msg.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2Msg) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2Msg.Merge(m, src)
@@ -222,16 +209,12 @@ func (m *Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Type.Merge(m, src)
@@ -261,16 +244,12 @@ func (m *Res1Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1Type.Merge(m, src)
@@ -298,16 +277,12 @@ func (m *Res2Type) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2Type) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2Type.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2Type) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2Type.Merge(m, src)
@@ -337,16 +312,12 @@ func (m *InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_InstanceParam.Merge(m, src)
@@ -383,16 +354,12 @@ func (m *Res1InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res1InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res1InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res1InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res1InstanceParam.Merge(m, src)
@@ -421,16 +388,12 @@ func (m *Res2InstanceParam) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Res2InstanceParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Res2InstanceParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Res2InstanceParam) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Res2InstanceParam.Merge(m, src)
@@ -478,79 +441,79 @@ func init() {
 }
 
 var fileDescriptor_24d50186b7bf8e51 = []byte{
-	// 1144 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x58, 0x4f, 0x8f, 0xdb, 0x44,
-	0x14, 0xcf, 0x24, 0xe9, 0x26, 0x9e, 0xec, 0x6e, 0x61, 0xb4, 0x48, 0x6e, 0x40, 0x6e, 0x14, 0x21,
-	0x08, 0x08, 0x6c, 0xc5, 0x5d, 0xb6, 0x90, 0xb2, 0xf4, 0xbf, 0x4a, 0x0e, 0x95, 0x5a, 0x6f, 0xb4,
-	0x12, 0x45, 0x25, 0x72, 0xe2, 0xd9, 0x60, 0xe1, 0x7f, 0x6b, 0x4f, 0x56, 0xcd, 0x0d, 0x71, 0x43,
-	0x02, 0x09, 0xa9, 0x47, 0xbe, 0x00, 0x37, 0xf8, 0x00, 0x7c, 0x80, 0x8a, 0xd3, 0x8a, 0x53, 0x0f,
-	0x20, 0xb1, 0xd9, 0x1e, 0x38, 0xf6, 0x82, 0x04, 0x07, 0x10, 0xf2, 0xd8, 0x49, 0xc6, 0x89, 0xbb,
-	0xb1, 0xb3, 0x0d, 0x5c, 0x76, 0x63, 0xfb, 0xbd, 0xdf, 0xbc, 0xf7, 0x7b, 0xbf, 0xf7, 0xfc, 0x64,
-	0x78, 0xd3, 0xd4, 0x1f, 0x60, 0x57, 0x22, 0xd8, 0x74, 0x0c, 0x95, 0x60, 0xc9, 0x53, 0x4d, 0xc7,
-	0xc0, 0xd2, 0x7e, 0xdf, 0x26, 0xaa, 0x74, 0xd7, 0xff, 0xdb, 0xc2, 0x1e, 0xc1, 0x6e, 0x2b, 0x34,
-	0x68, 0x7f, 0xaa, 0x5a, 0x9a, 0x81, 0xdd, 0xb6, 0x87, 0xdd, 0x03, 0xbd, 0x8b, 0x45, 0xc7, 0xb5,
-	0x89, 0x8d, 0x2a, 0xba, 0x47, 0x74, 0x5b, 0xa4, 0x60, 0xa2, 0xaa, 0xa9, 0x0e, 0xc1, 0xae, 0x18,
-	0x60, 0x89, 0x14, 0xab, 0xbc, 0xd1, 0xb3, 0x7b, 0x36, 0x35, 0x96, 0xfc, 0x5f, 0x81, 0x5f, 0xf9,
-	0xad, 0xe0, 0xf8, 0xd0, 0x43, 0x32, 0x6d, 0x0d, 0x1b, 0xd2, 0x41, 0xbd, 0x83, 0x89, 0x5a, 0x97,
-	0xf0, 0x03, 0x82, 0x2d, 0x4f, 0xb7, 0x2d, 0x2f, 0xb4, 0x3e, 0xd7, 0xb3, 0xed, 0x9e, 0x81, 0x25,
-	0x7a, 0xd5, 0xe9, 0xef, 0x49, 0xaa, 0x35, 0x08, 0x1f, 0xbd, 0x7e, 0x12, 0x10, 0x8d, 0x20, 0x34,
-	0x3c, 0xef, 0xd8, 0x86, 0xde, 0x1d, 0x8c, 0x9f, 0x1d, 0xa8, 0x46, 0x1f, 0xb7, 0xc9, 0xc0, 0xc1,
-	0xa3, 0x43, 0xa6, 0x0c, 0x26, 0x8f, 0xaa, 0x5f, 0x67, 0x21, 0xfa, 0x90, 0xe6, 0x4f, 0x99, 0x51,
-	0xf0, 0x7e, 0x1f, 0x7b, 0x04, 0x35, 0x61, 0x51, 0xb7, 0x3c, 0xa2, 0x5a, 0x5d, 0xcc, 0x83, 0x0a,
-	0xa8, 0x95, 0xe4, 0xb7, 0xc5, 0x79, 0x7c, 0x88, 0xcd, 0xd0, 0xe3, 0xb6, 0xd7, 0x53, 0xc6, 0xee,
-	0xe8, 0x12, 0x5c, 0x0f, 0xad, 0xdb, 0x5d, 0xdb, 0xda, 0xd3, 0x7b, 0x7c, 0x96, 0x02, 0x6e, 0x88,
-	0x41, 0xea, 0xe2, 0x28, 0x75, 0xf1, 0xaa, 0x35, 0x50, 0xd6, 0x42, 0xdb, 0xeb, 0xd4, 0x14, 0x9d,
-	0x83, 0x45, 0x0d, 0x6b, 0x7d, 0xa7, 0xad, 0x6b, 0x7c, 0xae, 0x02, 0x6a, 0x9c, 0x52, 0xa0, 0xd7,
-	0x4d, 0x0d, 0xb5, 0xe0, 0x1a, 0x3d, 0xb6, 0xed, 0x06, 0x31, 0xf3, 0x79, 0x0a, 0x2b, 0xc5, 0xc6,
-	0x49, 0xc9, 0x13, 0xc3, 0xfc, 0x45, 0x36, 0x55, 0x65, 0x75, 0x9f, 0xb9, 0xaa, 0xfe, 0x90, 0x83,
-	0x25, 0x26, 0x0f, 0xf4, 0x12, 0xcc, 0x5b, 0xaa, 0x89, 0xf9, 0xef, 0x7f, 0xfa, 0xb1, 0x4a, 0xcf,
-	0xa7, 0x97, 0xe8, 0x3e, 0x84, 0x9a, 0x6e, 0x86, 0xa5, 0xe4, 0x41, 0x25, 0x57, 0x2b, 0xc9, 0xdb,
-	0xa9, 0x18, 0x12, 0x6f, 0x8c, 0xfd, 0x6f, 0x5a, 0xc4, 0x1d, 0x28, 0x0c, 0x20, 0x6a, 0xc1, 0x42,
-	0xc7, 0xb6, 0x8d, 0xdb, 0xaa, 0xc3, 0x67, 0x29, 0x76, 0x23, 0x1d, 0xf6, 0xb5, 0xc0, 0x39, 0x00,
-	0x1e, 0x41, 0xa1, 0x6d, 0x98, 0x77, 0xb1, 0x57, 0xe7, 0x4b, 0x94, 0xa8, 0x37, 0xe6, 0x43, 0x2a,
-	0xd8, 0xab, 0xfb, 0xc5, 0xa4, 0x6e, 0xe5, 0x7b, 0xf0, 0xec, 0x54, 0xcc, 0xe8, 0x05, 0x98, 0xfb,
-	0x0c, 0x0f, 0xa8, 0x42, 0x38, 0xc5, 0xff, 0x89, 0xea, 0xf0, 0x0c, 0x95, 0x5f, 0x58, 0xe4, 0x97,
-	0xc3, 0x43, 0x02, 0x01, 0x8e, 0x0b, 0xb0, 0xeb, 0x9b, 0x28, 0x81, 0x65, 0x23, 0xfb, 0x2e, 0x28,
-	0x37, 0xe0, 0x2a, 0x1b, 0x73, 0x0c, 0xf0, 0x06, 0x0b, 0x5c, 0x64, 0x7c, 0xab, 0xdf, 0x16, 0x60,
-	0x21, 0x8c, 0x74, 0x72, 0x3c, 0x48, 0x7a, 0x3c, 0xfa, 0x28, 0x52, 0xca, 0x80, 0xee, 0xf7, 0x12,
-	0x73, 0x73, 0x62, 0x19, 0x5f, 0x83, 0xeb, 0xba, 0x45, 0xb6, 0x36, 0xef, 0xb8, 0xba, 0xa9, 0x13,
-	0xfd, 0x00, 0x53, 0x0d, 0xe7, 0x94, 0xa9, 0xbb, 0xe8, 0x55, 0xb8, 0xe6, 0xd7, 0x68, 0x62, 0x96,
-	0xa7, 0x39, 0x46, 0x6f, 0xa2, 0x1a, 0x3c, 0xab, 0xd9, 0xfd, 0x8e, 0x81, 0x27, 0x76, 0x67, 0x2a,
-	0xa0, 0x06, 0x94, 0xe9, 0xdb, 0xbe, 0xa5, 0x47, 0x5c, 0xdd, 0xea, 0x4d, 0x2c, 0x57, 0x28, 0x93,
-	0xd3, 0xb7, 0xd1, 0x8e, 0xdf, 0xe7, 0x64, 0x6b, 0xd3, 0x57, 0x5a, 0x81, 0xa6, 0x7e, 0x31, 0x79,
-	0xea, 0xcd, 0xd0, 0x33, 0x48, 0x7c, 0x0c, 0x84, 0xb6, 0x21, 0x47, 0x74, 0x13, 0xef, 0x10, 0xd5,
-	0x74, 0x78, 0x8e, 0x16, 0xe2, 0x7c, 0x7c, 0x21, 0x5a, 0x23, 0x33, 0x65, 0xe2, 0x81, 0x1a, 0xb0,
-	0xa8, 0xf5, 0x5d, 0x95, 0xe8, 0xb6, 0xc5, 0x43, 0xea, 0x2d, 0xc4, 0x7b, 0xdf, 0x08, 0xad, 0x94,
-	0xb1, 0x7d, 0x28, 0x71, 0x39, 0x95, 0xc4, 0xe5, 0x91, 0xc4, 0x65, 0x74, 0x17, 0x16, 0xfd, 0xff,
-	0x6d, 0x53, 0x75, 0xf8, 0x55, 0x4a, 0xc7, 0x56, 0x72, 0x3a, 0x28, 0xd4, 0xb8, 0xe9, 0xdc, 0xe0,
-	0x6a, 0xa9, 0x5d, 0x73, 0x09, 0xae, 0x45, 0x6a, 0x30, 0xaf, 0x6d, 0x72, 0xac, 0x33, 0x86, 0xab,
-	0x6c, 0xc4, 0x31, 0xbe, 0x97, 0xa3, 0x51, 0xa5, 0x60, 0x93, 0xed, 0xce, 0x2c, 0xed, 0x4e, 0xf9,
-	0x3f, 0xef, 0x4e, 0xf9, 0x39, 0x75, 0xe7, 0x32, 0x2b, 0x58, 0xfd, 0x07, 0xc0, 0x7c, 0x6b, 0xe0,
-	0x60, 0xb4, 0x1b, 0xf3, 0x42, 0x49, 0xa0, 0x3d, 0xdf, 0xf7, 0xc4, 0x24, 0x3f, 0x88, 0xcc, 0xfc,
-	0x37, 0x93, 0xa9, 0xd9, 0x47, 0x0d, 0x87, 0xfe, 0x27, 0x49, 0x92, 0x7f, 0x87, 0x4d, 0x7e, 0xfd,
-	0x59, 0xcd, 0x4e, 0x93, 0xa7, 0xd0, 0x0c, 0x01, 0x7f, 0xe5, 0x60, 0x71, 0x74, 0xe4, 0x04, 0x07,
-	0xa4, 0xc1, 0x41, 0xf7, 0x62, 0x34, 0xd2, 0x48, 0x9e, 0x69, 0x02, 0xfe, 0xe4, 0x54, 0xfc, 0xc9,
-	0x63, 0xfe, 0x64, 0xa4, 0xcc, 0x4c, 0x94, 0x8b, 0x29, 0x22, 0x8b, 0x1f, 0x29, 0x4b, 0xae, 0x49,
-	0x79, 0x6f, 0xee, 0x64, 0xb8, 0x12, 0x55, 0x7b, 0x1a, 0x5a, 0x98, 0xda, 0xff, 0x0d, 0x68, 0xed,
-	0xe5, 0xff, 0xa7, 0xf6, 0xf2, 0xbc, 0xda, 0x2f, 0x5d, 0xfb, 0x5f, 0xe5, 0xfc, 0xf9, 0x1d, 0x6c,
-	0x6d, 0x77, 0x54, 0x57, 0x35, 0x51, 0x3b, 0x66, 0x0a, 0x5c, 0x4e, 0xbe, 0xfa, 0x51, 0x90, 0x13,
-	0xe5, 0xbc, 0x3b, 0xbd, 0x58, 0xbe, 0x9f, 0x16, 0x3d, 0x7e, 0xb5, 0xbc, 0x15, 0x19, 0x33, 0x17,
-	0x92, 0x49, 0x3c, 0x02, 0x1c, 0xce, 0x9b, 0xed, 0x24, 0x9c, 0x47, 0x5e, 0x6a, 0xdc, 0x29, 0xf6,
-	0x48, 0xd6, 0xb7, 0xfa, 0xcb, 0x0a, 0x7c, 0x71, 0x26, 0xac, 0x89, 0x3d, 0x60, 0xec, 0x51, 0x37,
-	0x46, 0x76, 0xd7, 0x17, 0xc8, 0x7a, 0x81, 0x17, 0x14, 0x97, 0x6c, 0x7d, 0xe4, 0x12, 0xae, 0x8f,
-	0xdc, 0x69, 0xd6, 0xc7, 0xfb, 0x33, 0xeb, 0xe3, 0xd5, 0x45, 0x48, 0x78, 0xd6, 0x22, 0xf9, 0xca,
-	0xf4, 0x22, 0xc9, 0xb1, 0x7b, 0x62, 0x79, 0x6a, 0x4f, 0xe4, 0x98, 0x3d, 0xf0, 0x56, 0x64, 0x6c,
-	0x27, 0xd3, 0xa3, 0x3c, 0xab, 0x47, 0x19, 0x7d, 0x3c, 0x33, 0xbf, 0xaf, 0x2c, 0x92, 0x61, 0xfc,
-	0x20, 0x3f, 0xa5, 0xd8, 0xd3, 0xae, 0x7f, 0x11, 0x67, 0x7b, 0xee, 0x90, 0x6f, 0x46, 0x87, 0xfc,
-	0x42, 0x24, 0x32, 0xed, 0xf5, 0x07, 0xa0, 0xed, 0x25, 0x2f, 0xb7, 0xbd, 0xe4, 0xe7, 0xde, 0x5e,
-	0xa7, 0xac, 0x92, 0xfc, 0x25, 0x88, 0x7c, 0x61, 0xd9, 0x09, 0x3e, 0x32, 0x21, 0x0f, 0x96, 0x98,
-	0xbb, 0x68, 0x73, 0x7e, 0x76, 0xb3, 0x9f, 0x69, 0xca, 0x62, 0xf2, 0x8f, 0x1d, 0x5e, 0xdf, 0x20,
-	0xd7, 0x9a, 0x8f, 0x8e, 0x84, 0xcc, 0xe1, 0x91, 0x90, 0x79, 0x7c, 0x24, 0x64, 0x9e, 0x1e, 0x09,
-	0x99, 0xcf, 0x87, 0x02, 0xf8, 0x6e, 0x28, 0x64, 0x1e, 0x0d, 0x05, 0x70, 0x38, 0x14, 0xc0, 0x6f,
-	0x43, 0x01, 0xfc, 0x3e, 0x14, 0x32, 0x4f, 0x87, 0x02, 0xf8, 0xe6, 0x58, 0xc8, 0x1c, 0x1e, 0x0b,
-	0x99, 0xc7, 0xc7, 0x42, 0xe6, 0xcf, 0x9f, 0x9f, 0x3c, 0xcc, 0x66, 0xbf, 0xf8, 0xf5, 0xc9, 0xc3,
-	0xec, 0x19, 0x1a, 0x4d, 0x67, 0x85, 0x7e, 0xb6, 0xb9, 0xf0, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0x72, 0x1c, 0xf1, 0x11, 0x6e, 0x13, 0x00, 0x00,
+	// 1147 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x58, 0x4f, 0x6f, 0xe3, 0x44,
+	0x14, 0xcf, 0x24, 0xdd, 0x26, 0x9e, 0xb4, 0x5d, 0x18, 0x15, 0xc9, 0x1b, 0x90, 0x37, 0x8a, 0x10,
+	0x04, 0x04, 0xb6, 0xe2, 0x2d, 0x5d, 0xc8, 0x52, 0xf6, 0xbf, 0x96, 0x1c, 0x2a, 0xed, 0xba, 0x51,
+	0x25, 0x16, 0x2d, 0x91, 0x13, 0x4f, 0x83, 0x85, 0xff, 0xd5, 0x9e, 0x54, 0x9b, 0x1b, 0xe2, 0x86,
+	0x04, 0x12, 0xd2, 0x1e, 0xf9, 0x02, 0xdc, 0xe0, 0x03, 0xf0, 0x01, 0x56, 0x9c, 0x2a, 0x4e, 0x3d,
+	0x80, 0x44, 0xd3, 0x3d, 0x70, 0xdc, 0x0b, 0x12, 0x1c, 0x40, 0xc8, 0x63, 0x27, 0x19, 0x27, 0xde,
+	0xc6, 0x4e, 0x37, 0x70, 0x69, 0x63, 0xfb, 0xbd, 0xdf, 0xbc, 0xf7, 0x7b, 0xbf, 0xf7, 0xfc, 0x64,
+	0x78, 0xdb, 0xd4, 0x1f, 0x62, 0x57, 0x22, 0xd8, 0x74, 0x0c, 0x95, 0x60, 0xc9, 0x53, 0x4d, 0xc7,
+	0xc0, 0xd2, 0x7e, 0xcf, 0x26, 0xaa, 0x74, 0xcf, 0xff, 0xdb, 0xc4, 0x1e, 0xc1, 0x6e, 0x33, 0x34,
+	0x68, 0x7d, 0xaa, 0x5a, 0x9a, 0x81, 0xdd, 0x96, 0x87, 0xdd, 0x03, 0xbd, 0x83, 0x45, 0xc7, 0xb5,
+	0x89, 0x8d, 0xca, 0xba, 0x47, 0x74, 0x5b, 0xa4, 0x60, 0xa2, 0xaa, 0xa9, 0x0e, 0xc1, 0xae, 0x18,
+	0x60, 0x89, 0x14, 0xab, 0xb4, 0xde, 0xb5, 0xbb, 0x36, 0x35, 0x96, 0xfc, 0x5f, 0x81, 0x5f, 0xe9,
+	0xad, 0xe0, 0xf8, 0xd0, 0x43, 0x32, 0x6d, 0x0d, 0x1b, 0xd2, 0x41, 0xad, 0x8d, 0x89, 0x5a, 0x93,
+	0xf0, 0x43, 0x82, 0x2d, 0x4f, 0xb7, 0x2d, 0x2f, 0xb4, 0xbe, 0xd0, 0xb5, 0xed, 0xae, 0x81, 0x25,
+	0x7a, 0xd5, 0xee, 0xed, 0x49, 0xaa, 0xd5, 0x0f, 0x1f, 0xbd, 0x7e, 0x1a, 0x10, 0x8d, 0x20, 0x34,
+	0xbc, 0xe8, 0xd8, 0x86, 0xde, 0xe9, 0x8f, 0x9e, 0x1d, 0xa8, 0x46, 0x0f, 0xb7, 0x48, 0xdf, 0xc1,
+	0xc3, 0x43, 0x26, 0x0c, 0xc6, 0x8f, 0x2a, 0x5f, 0x67, 0x21, 0xfa, 0x90, 0xe6, 0x4f, 0x99, 0x51,
+	0xf0, 0x7e, 0x0f, 0x7b, 0x04, 0x35, 0x60, 0x41, 0xb7, 0x3c, 0xa2, 0x5a, 0x1d, 0xcc, 0x83, 0x32,
+	0xa8, 0x16, 0xe5, 0xb7, 0xc5, 0x59, 0x7c, 0x88, 0x8d, 0xd0, 0x63, 0xdb, 0xeb, 0x2a, 0x23, 0x77,
+	0x74, 0x05, 0xae, 0x85, 0xd6, 0xad, 0x8e, 0x6d, 0xed, 0xe9, 0x5d, 0x3e, 0x4b, 0x01, 0xd7, 0xc5,
+	0x20, 0x75, 0x71, 0x98, 0xba, 0x78, 0xdd, 0xea, 0x2b, 0xab, 0xa1, 0xed, 0x4d, 0x6a, 0x8a, 0x2e,
+	0xc0, 0x82, 0x86, 0xb5, 0x9e, 0xd3, 0xd2, 0x35, 0x3e, 0x57, 0x06, 0x55, 0x4e, 0xc9, 0xd3, 0xeb,
+	0x86, 0x86, 0x9a, 0x70, 0x95, 0x1e, 0xdb, 0x72, 0x83, 0x98, 0xf9, 0x25, 0x0a, 0x2b, 0xc5, 0xc6,
+	0x49, 0xc9, 0x13, 0xc3, 0xfc, 0x45, 0x36, 0x55, 0x65, 0x65, 0x9f, 0xb9, 0xaa, 0xfc, 0x90, 0x83,
+	0x45, 0x26, 0x0f, 0xf4, 0x12, 0x5c, 0xb2, 0x54, 0x13, 0xf3, 0xdf, 0xff, 0xf4, 0x63, 0x85, 0x9e,
+	0x4f, 0x2f, 0xd1, 0x03, 0x08, 0x35, 0xdd, 0x0c, 0x4b, 0xc9, 0x83, 0x72, 0xae, 0x5a, 0x94, 0xb7,
+	0x52, 0x31, 0x24, 0xde, 0x1a, 0xf9, 0xdf, 0xb6, 0x88, 0xdb, 0x57, 0x18, 0x40, 0xd4, 0x84, 0xf9,
+	0xb6, 0x6d, 0x1b, 0xdb, 0xaa, 0xc3, 0x67, 0x29, 0x76, 0x3d, 0x1d, 0xf6, 0x8d, 0xc0, 0x39, 0x00,
+	0x1e, 0x42, 0xa1, 0x2d, 0xb8, 0xe4, 0x62, 0xaf, 0xc6, 0x17, 0x29, 0x51, 0x6f, 0xcc, 0x86, 0x54,
+	0xb0, 0x57, 0xf3, 0x8b, 0x49, 0xdd, 0x4a, 0xf7, 0xe1, 0xf9, 0x89, 0x98, 0xd1, 0x0b, 0x30, 0xf7,
+	0x19, 0xee, 0x53, 0x85, 0x70, 0x8a, 0xff, 0x13, 0xd5, 0xe0, 0x39, 0x2a, 0xbf, 0xb0, 0xc8, 0x2f,
+	0x87, 0x87, 0x04, 0x02, 0x1c, 0x15, 0x60, 0xd7, 0x37, 0x51, 0x02, 0xcb, 0x7a, 0xf6, 0x5d, 0x50,
+	0xaa, 0xc3, 0x15, 0x36, 0xe6, 0x18, 0xe0, 0x75, 0x16, 0xb8, 0xc0, 0xf8, 0x56, 0xbe, 0xcd, 0xc3,
+	0x7c, 0x18, 0xe9, 0xf8, 0x78, 0x90, 0xf4, 0x78, 0xf4, 0x51, 0xa4, 0x94, 0x01, 0xdd, 0xef, 0x25,
+	0xe6, 0xe6, 0xd4, 0x32, 0xbe, 0x06, 0xd7, 0x74, 0x8b, 0x6c, 0x6e, 0xdc, 0x75, 0x75, 0x53, 0x27,
+	0xfa, 0x01, 0xa6, 0x1a, 0xce, 0x29, 0x13, 0x77, 0xd1, 0xab, 0x70, 0xd5, 0xaf, 0xd1, 0xd8, 0x6c,
+	0x89, 0xe6, 0x18, 0xbd, 0x89, 0xaa, 0xf0, 0xbc, 0x66, 0xf7, 0xda, 0x06, 0x1e, 0xdb, 0x9d, 0x2b,
+	0x83, 0x2a, 0x50, 0x26, 0x6f, 0xfb, 0x96, 0x1e, 0x71, 0x75, 0xab, 0x3b, 0xb6, 0x5c, 0xa6, 0x4c,
+	0x4e, 0xde, 0x46, 0x3b, 0x7e, 0x9f, 0x93, 0xcd, 0x0d, 0x5f, 0x69, 0x79, 0x9a, 0xfa, 0xe5, 0xe4,
+	0xa9, 0x37, 0x42, 0xcf, 0x20, 0xf1, 0x11, 0x10, 0xda, 0x82, 0x1c, 0xd1, 0x4d, 0xbc, 0x43, 0x54,
+	0xd3, 0xe1, 0x39, 0x5a, 0x88, 0x8b, 0xf1, 0x85, 0x68, 0x0e, 0xcd, 0x94, 0xb1, 0x07, 0xaa, 0xc3,
+	0x82, 0xd6, 0x73, 0x55, 0xa2, 0xdb, 0x16, 0x0f, 0xa9, 0xb7, 0x10, 0xef, 0x7d, 0x2b, 0xb4, 0x52,
+	0x46, 0xf6, 0xa1, 0xc4, 0xe5, 0x54, 0x12, 0x97, 0x87, 0x12, 0x97, 0xd1, 0x3d, 0x58, 0xf0, 0xff,
+	0xb7, 0x4c, 0xd5, 0xe1, 0x57, 0x28, 0x1d, 0x9b, 0xc9, 0xe9, 0xa0, 0x50, 0xa3, 0xa6, 0x73, 0x83,
+	0xab, 0x85, 0x76, 0xcd, 0x15, 0xb8, 0x1a, 0xa9, 0xc1, 0xac, 0xb6, 0xc9, 0xb1, 0xce, 0x18, 0xae,
+	0xb0, 0x11, 0xc7, 0xf8, 0x5e, 0x8d, 0x46, 0x95, 0x82, 0x4d, 0xb6, 0x3b, 0xb3, 0xb4, 0x3b, 0xe5,
+	0xff, 0xbc, 0x3b, 0xe5, 0xe7, 0xd4, 0x9d, 0x8b, 0xac, 0x60, 0xe5, 0x1f, 0x00, 0x97, 0x9a, 0x7d,
+	0x07, 0xa3, 0xdd, 0x98, 0x17, 0x4a, 0x02, 0xed, 0xf9, 0xbe, 0xa7, 0x26, 0xf9, 0x41, 0x64, 0xe6,
+	0xbf, 0x99, 0x4c, 0xcd, 0x3e, 0x6a, 0x38, 0xf4, 0x3f, 0x49, 0x92, 0xfc, 0x3b, 0x6c, 0xf2, 0x6b,
+	0xcf, 0x6a, 0x76, 0x9a, 0x3c, 0x85, 0x66, 0x08, 0xf8, 0x2b, 0x07, 0x0b, 0xc3, 0x23, 0xc7, 0x38,
+	0x20, 0x0d, 0x0e, 0xba, 0x1f, 0xa3, 0x91, 0x7a, 0xf2, 0x4c, 0x13, 0xf0, 0x27, 0xa7, 0xe2, 0x4f,
+	0x1e, 0xf1, 0x27, 0x23, 0x65, 0x6a, 0xa2, 0x5c, 0x4e, 0x11, 0x59, 0xfc, 0x48, 0x59, 0x70, 0x4d,
+	0x4a, 0x7b, 0x33, 0x27, 0xc3, 0xb5, 0xa8, 0xda, 0xd3, 0xd0, 0xc2, 0xd4, 0xfe, 0x6f, 0x40, 0x6b,
+	0x2f, 0xff, 0x3f, 0xb5, 0x97, 0x67, 0xd5, 0x7e, 0xe1, 0xda, 0xff, 0x2a, 0xe7, 0xcf, 0xef, 0x60,
+	0x6b, 0xbb, 0xab, 0xba, 0xaa, 0x89, 0x5a, 0x31, 0x53, 0xe0, 0x6a, 0xf2, 0xd5, 0x8f, 0x82, 0x9c,
+	0x2a, 0xe7, 0xdd, 0xc9, 0xc5, 0xf2, 0xfd, 0xb4, 0xe8, 0xf1, 0xab, 0xe5, 0x9d, 0xc8, 0x98, 0xb9,
+	0x94, 0x4c, 0xe2, 0x11, 0xe0, 0x70, 0xde, 0x6c, 0x25, 0xe1, 0x3c, 0xf2, 0x52, 0xe3, 0xce, 0xb0,
+	0x47, 0xb2, 0xbe, 0x95, 0x5f, 0x96, 0xe1, 0x8b, 0x53, 0x61, 0x8d, 0xed, 0x01, 0x63, 0x8f, 0x3a,
+	0x31, 0xb2, 0xbb, 0x39, 0x47, 0xd6, 0x73, 0xbc, 0xa0, 0xb8, 0x64, 0xeb, 0x23, 0x97, 0x70, 0x7d,
+	0xe4, 0xce, 0xb2, 0x3e, 0x3e, 0x98, 0x5a, 0x1f, 0xaf, 0xcf, 0x43, 0xc2, 0xb3, 0x16, 0xc9, 0x57,
+	0x26, 0x17, 0x49, 0x8e, 0xdd, 0x13, 0x4b, 0x13, 0x7b, 0x22, 0xc7, 0xec, 0x81, 0x77, 0x22, 0x63,
+	0x3b, 0x99, 0x1e, 0xe5, 0x69, 0x3d, 0xca, 0xe8, 0xe3, 0xa9, 0xf9, 0x7d, 0x6d, 0x9e, 0x0c, 0xe3,
+	0x07, 0xf9, 0x19, 0xc5, 0x9e, 0x76, 0xfd, 0x8b, 0x38, 0xdb, 0x33, 0x87, 0x7c, 0x23, 0x3a, 0xe4,
+	0xe7, 0x22, 0x91, 0x69, 0xaf, 0x3f, 0x00, 0x6d, 0x2f, 0x79, 0xb1, 0xed, 0x25, 0x3f, 0xf7, 0xf6,
+	0x3a, 0x63, 0x95, 0xe4, 0x2f, 0x41, 0xe4, 0x0b, 0xcb, 0x4e, 0xf0, 0x91, 0x09, 0x79, 0xb0, 0xc8,
+	0xdc, 0x45, 0x1b, 0xb3, 0xb3, 0x9b, 0xfe, 0x4c, 0x53, 0x12, 0x93, 0x7f, 0xec, 0xf0, 0x7a, 0x06,
+	0xb9, 0xb1, 0xfd, 0xf8, 0x58, 0xc8, 0x1c, 0x1e, 0x0b, 0x99, 0xa3, 0x63, 0x21, 0xf3, 0xf4, 0x58,
+	0xc8, 0x7c, 0x3e, 0x10, 0xc0, 0x77, 0x03, 0x21, 0xf3, 0x78, 0x20, 0x80, 0xc3, 0x81, 0x00, 0x8e,
+	0x06, 0x02, 0xf8, 0x6d, 0x20, 0x80, 0xdf, 0x07, 0x42, 0xe6, 0xe9, 0x40, 0x00, 0xdf, 0x9c, 0x08,
+	0x99, 0xc3, 0x13, 0x21, 0x73, 0x74, 0x22, 0x64, 0xfe, 0xfc, 0xf9, 0xc9, 0xa3, 0x6c, 0xf6, 0x8b,
+	0x5f, 0x9f, 0x3c, 0xca, 0x9e, 0xa3, 0x11, 0xb5, 0x97, 0xe9, 0xa7, 0x9b, 0x4b, 0xff, 0x06, 0x00,
+	0x00, 0xff, 0xff, 0x7f, 0x76, 0x50, 0x79, 0x72, 0x13, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -592,6 +555,14 @@ type HandleQuotaServiceServer interface {
 	HandleQuota(context.Context, *HandleQuotaRequest) (*v1beta1.QuotaResult, error)
 }
 
+// UnimplementedHandleQuotaServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedHandleQuotaServiceServer struct {
+}
+
+func (*UnimplementedHandleQuotaServiceServer) HandleQuota(ctx context.Context, req *HandleQuotaRequest) (*v1beta1.QuotaResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleQuota not implemented")
+}
+
 func RegisterHandleQuotaServiceServer(s *grpc.Server, srv HandleQuotaServiceServer) {
 	s.RegisterService(&_HandleQuotaService_serviceDesc, srv)
 }
@@ -630,7 +601,7 @@ var _HandleQuotaService_serviceDesc = grpc.ServiceDesc{
 func (m *HandleQuotaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -638,53 +609,65 @@ func (m *HandleQuotaRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HandleQuotaRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandleQuotaRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Instance != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Instance.Size()))
-		n1, err1 := m.Instance.MarshalTo(dAtA[i:])
-		if err1 != nil {
-			return 0, err1
+	if m.QuotaRequest != nil {
+		{
+			size, err := m.QuotaRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n1
-	}
-	if m.AdapterConfig != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.AdapterConfig.Size()))
-		n2, err2 := m.AdapterConfig.MarshalTo(dAtA[i:])
-		if err2 != nil {
-			return 0, err2
-		}
-		i += n2
+		i--
+		dAtA[i] = 0x22
 	}
 	if len(m.DedupId) > 0 {
-		dAtA[i] = 0x1a
-		i++
+		i -= len(m.DedupId)
+		copy(dAtA[i:], m.DedupId)
 		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.DedupId)))
-		i += copy(dAtA[i:], m.DedupId)
+		i--
+		dAtA[i] = 0x1a
 	}
-	if m.QuotaRequest != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.QuotaRequest.Size()))
-		n3, err3 := m.QuotaRequest.MarshalTo(dAtA[i:])
-		if err3 != nil {
-			return 0, err3
+	if m.AdapterConfig != nil {
+		{
+			size, err := m.AdapterConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n3
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Instance != nil {
+		{
+			size, err := m.Instance.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -692,90 +675,107 @@ func (m *InstanceMsg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceMsg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceMsg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0xa
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x93
+		i--
+		dAtA[i] = 0xe4
+		i--
+		dAtA[i] = 0xd2
+		i--
+		dAtA[i] = 0xfa
+	}
+	if m.Res1 != nil {
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n4, err4 := v.MarshalTo(dAtA[i:])
-				if err4 != nil {
-					return 0, err4
-				}
-				i += n4
-			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x5a
 	}
 	if len(m.BoolMap) > 0 {
-		for k, _ := range m.BoolMap {
-			dAtA[i] = 0x12
-			i++
-			v := m.BoolMap[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + 1
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForBoolMap := make([]string, 0, len(m.BoolMap))
+		for k := range m.BoolMap {
+			keysForBoolMap = append(keysForBoolMap, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForBoolMap)
+		for iNdEx := len(keysForBoolMap) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.BoolMap[string(keysForBoolMap[iNdEx])]
+			baseI := i
+			i--
 			if v {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
 			}
-			i++
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForBoolMap[iNdEx])
+			copy(dAtA[i:], keysForBoolMap[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForBoolMap[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n5, err5 := m.Res1.MarshalTo(dAtA[i:])
-		if err5 != nil {
-			return 0, err5
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
 		}
-		i += n5
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xfa
-		i++
-		dAtA[i] = 0xd2
-		i++
-		dAtA[i] = 0xe4
-		i++
-		dAtA[i] = 0x93
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -783,156 +783,182 @@ func (m *Res1Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value.Size()))
-		n6, err6 := m.Value.MarshalTo(dAtA[i:])
-		if err6 != nil {
-			return 0, err6
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
 		}
-		i += n6
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n7, err7 := v.MarshalTo(dAtA[i:])
-				if err7 != nil {
-					return 0, err7
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n7
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
 	}
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.DoublePrimitive != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
+		i--
+		dAtA[i] = 0x29
 	}
 	if m.BoolPrimitive {
-		dAtA[i] = 0x20
-		i++
+		i--
 		if m.BoolPrimitive {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.DoublePrimitive != 0 {
-		dAtA[i] = 0x29
-		i++
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.DoublePrimitive))))
-		i += 8
+	if m.Int64Primitive != 0 {
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x18
 	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + sovQuotaTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
 		}
-	}
-	if m.TimeStamp != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.TimeStamp.Size()))
-		n8, err8 := m.TimeStamp.MarshalTo(dAtA[i:])
-		if err8 != nil {
-			return 0, err8
-		}
-		i += n8
-	}
-	if m.Duration != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Duration.Size()))
-		n9, err9 := m.Duration.MarshalTo(dAtA[i:])
-		if err9 != nil {
-			return 0, err9
-		}
-		i += n9
-	}
-	if m.Res2 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n10, err10 := m.Res2.MarshalTo(dAtA[i:])
-		if err10 != nil {
-			return 0, err10
-		}
-		i += n10
-	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n11, err11 := v.MarshalTo(dAtA[i:])
-				if err11 != nil {
-					return 0, err11
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n11
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != nil {
+		{
+			size, err := m.Value.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2Msg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -940,60 +966,70 @@ func (m *Res2Msg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2Msg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2Msg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value.Size()))
-		n12, err12 := m.Value.MarshalTo(dAtA[i:])
-		if err12 != nil {
-			return 0, err12
-		}
-		i += n12
+	if m.Int64Primitive != 0 {
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+		i--
+		dAtA[i] = 0x18
 	}
 	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			msgSize := 0
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n13, err13 := v.MarshalTo(dAtA[i:])
-				if err13 != nil {
-					return 0, err13
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 				}
-				i += n13
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.Int64Primitive != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Int64Primitive))
+	if m.Value != nil {
+		{
+			size, err := m.Value.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1001,43 +1037,56 @@ func (m *Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0xa
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + sovQuotaTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
-		}
-	}
 	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n14, err14 := m.Res1.MarshalTo(dAtA[i:])
-		if err14 != nil {
-			return 0, err14
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
-		i += n14
+		i--
+		dAtA[i] = 0x5a
 	}
-	return i, nil
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1045,76 +1094,92 @@ func (m *Res1Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + sovQuotaTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
 	}
 	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n15, err15 := m.Res2.MarshalTo(dAtA[i:])
-		if err15 != nil {
-			return 0, err15
-		}
-		i += n15
 	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n16, err16 := v.MarshalTo(dAtA[i:])
-				if err16 != nil {
-					return 0, err16
-				}
-				i += n16
-			}
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != 0 {
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2Type) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1122,38 +1187,49 @@ func (m *Res2Type) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2Type) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2Type) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Value != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
-	}
 	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + sovQuotaTesterTemplateHandlerService(uint64(v))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
 			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Value != 0 {
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1161,61 +1237,82 @@ func (m *InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0xa
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovQuotaTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+	if m.Res1 != nil {
+		{
+			size, err := m.Res1.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x5a
 	}
 	if len(m.BoolMap) > 0 {
-		for k, _ := range m.BoolMap {
-			dAtA[i] = 0x12
-			i++
-			v := m.BoolMap[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovQuotaTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
+		keysForBoolMap := make([]string, 0, len(m.BoolMap))
+		for k := range m.BoolMap {
+			keysForBoolMap = append(keysForBoolMap, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForBoolMap)
+		for iNdEx := len(keysForBoolMap) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.BoolMap[string(keysForBoolMap[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
 			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForBoolMap[iNdEx])
+			copy(dAtA[i:], keysForBoolMap[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForBoolMap[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.Res1 != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res1.Size()))
-		n17, err17 := m.Res1.MarshalTo(dAtA[i:])
-		if err17 != nil {
-			return 0, err17
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
 		}
-		i += n17
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Res1InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1223,131 +1320,162 @@ func (m *Res1InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res1InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res1InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
-		i += copy(dAtA[i:], m.Value)
-	}
-	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovQuotaTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+	if len(m.Res2Map) > 0 {
+		keysForRes2Map := make([]string, 0, len(m.Res2Map))
+		for k := range m.Res2Map {
+			keysForRes2Map = append(keysForRes2Map, string(k))
 		}
-	}
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
-	}
-	if len(m.BoolPrimitive) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
-		i += copy(dAtA[i:], m.BoolPrimitive)
-	}
-	if len(m.DoublePrimitive) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
-		i += copy(dAtA[i:], m.DoublePrimitive)
-	}
-	if len(m.StringPrimitive) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
-		i += copy(dAtA[i:], m.StringPrimitive)
-	}
-	if len(m.Int64Map) > 0 {
-		for k, _ := range m.Int64Map {
-			dAtA[i] = 0x3a
-			i++
-			v := m.Int64Map[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovQuotaTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+		github_com_gogo_protobuf_sortkeys.Strings(keysForRes2Map)
+		for iNdEx := len(keysForRes2Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Res2Map[string(keysForRes2Map[iNdEx])]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(keysForRes2Map[iNdEx])
+			copy(dAtA[i:], keysForRes2Map[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForRes2Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x62
 		}
-	}
-	if len(m.TimeStamp) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
-		i += copy(dAtA[i:], m.TimeStamp)
-	}
-	if len(m.Duration) > 0 {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
-		i += copy(dAtA[i:], m.Duration)
 	}
 	if m.Res2 != nil {
+		{
+			size, err := m.Res2.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(m.Res2.Size()))
-		n18, err18 := m.Res2.MarshalTo(dAtA[i:])
-		if err18 != nil {
-			return 0, err18
-		}
-		i += n18
 	}
-	if len(m.Res2Map) > 0 {
-		for k, _ := range m.Res2Map {
-			dAtA[i] = 0x62
-			i++
-			v := m.Res2Map[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovQuotaTesterTemplateHandlerService(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + msgSize
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
+	if len(m.Duration) > 0 {
+		i -= len(m.Duration)
+		copy(dAtA[i:], m.Duration)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Duration)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.TimeStamp) > 0 {
+		i -= len(m.TimeStamp)
+		copy(dAtA[i:], m.TimeStamp)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.TimeStamp)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.Int64Map) > 0 {
+		keysForInt64Map := make([]string, 0, len(m.Int64Map))
+		for k := range m.Int64Map {
+			keysForInt64Map = append(keysForInt64Map, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForInt64Map)
+		for iNdEx := len(keysForInt64Map) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Int64Map[string(keysForInt64Map[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForInt64Map[iNdEx])
+			copy(dAtA[i:], keysForInt64Map[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForInt64Map[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(v.Size()))
-				n19, err19 := v.MarshalTo(dAtA[i:])
-				if err19 != nil {
-					return 0, err19
-				}
-				i += n19
-			}
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x3a
 		}
 	}
-	return i, nil
+	if len(m.StringPrimitive) > 0 {
+		i -= len(m.StringPrimitive)
+		copy(dAtA[i:], m.StringPrimitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.StringPrimitive)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DoublePrimitive) > 0 {
+		i -= len(m.DoublePrimitive)
+		copy(dAtA[i:], m.DoublePrimitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.DoublePrimitive)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.BoolPrimitive) > 0 {
+		i -= len(m.BoolPrimitive)
+		copy(dAtA[i:], m.BoolPrimitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.BoolPrimitive)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Dimensions) > 0 {
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Res2InstanceParam) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1355,50 +1483,66 @@ func (m *Res2InstanceParam) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Res2InstanceParam) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Res2InstanceParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
-		i += copy(dAtA[i:], m.Value)
+	if len(m.Int64Primitive) > 0 {
+		i -= len(m.Int64Primitive)
+		copy(dAtA[i:], m.Int64Primitive)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.Dimensions) > 0 {
-		for k, _ := range m.Dimensions {
-			dAtA[i] = 0x12
-			i++
-			v := m.Dimensions[k]
-			mapSize := 1 + len(k) + sovQuotaTesterTemplateHandlerService(uint64(len(k))) + 1 + len(v) + sovQuotaTesterTemplateHandlerService(uint64(len(v)))
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x12
-			i++
+		keysForDimensions := make([]string, 0, len(m.Dimensions))
+		for k := range m.Dimensions {
+			keysForDimensions = append(keysForDimensions, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForDimensions)
+		for iNdEx := len(keysForDimensions) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Dimensions[string(keysForDimensions[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
 			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(v)))
-			i += copy(dAtA[i:], v)
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForDimensions[iNdEx])
+			copy(dAtA[i:], keysForDimensions[iNdEx])
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(keysForDimensions[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if len(m.Int64Primitive) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Int64Primitive)))
-		i += copy(dAtA[i:], m.Int64Primitive)
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintQuotaTesterTemplateHandlerService(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintQuotaTesterTemplateHandlerService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovQuotaTesterTemplateHandlerService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *HandleQuotaRequest) Size() (n int) {
 	if m == nil {
@@ -1767,14 +1911,7 @@ func (m *Res2InstanceParam) Size() (n int) {
 }
 
 func sovQuotaTesterTemplateHandlerService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozQuotaTesterTemplateHandlerService(x uint64) (n int) {
 	return sovQuotaTesterTemplateHandlerService(uint64((x << 1) ^ uint64((int64(x) >> 63))))

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:lll
-//go:generate go run $GOPATH/src/istio.io/istio/mixer/tools/mixgen/main.go adapter -n listbackend-nosession -c $GOPATH/src/istio.io/istio/mixer/adapter/list/config/config.proto_descriptor -s=false -t listentry -o nosession.yaml
+//go:generate go run $REPO_ROOT/mixer/tools/mixgen/main.go adapter -n listbackend-nosession -c $REPO_ROOT/mixer/adapter/list/config/config.proto_descriptor -s=false -t listentry -o nosession.yaml
 
 package listbackend
 
@@ -30,9 +30,9 @@ import (
 	"istio.io/istio/mixer/adapter/list"
 	"istio.io/istio/mixer/adapter/list/config"
 	"istio.io/istio/mixer/pkg/adapter"
-	"istio.io/istio/mixer/pkg/pool"
 	"istio.io/istio/mixer/pkg/runtime/handler"
 	"istio.io/istio/mixer/template/listentry"
+	"istio.io/pkg/pool"
 )
 
 type (

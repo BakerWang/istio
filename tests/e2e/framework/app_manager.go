@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"istio.io/common/pkg/log"
 	"istio.io/istio/tests/util"
+	"istio.io/pkg/log"
 )
 
 var (
-	useAutomaticInjection = flag.Bool("use-automatic-injection", false, "Use automatic injection instead of kube-inject for transparent proxy injection")
+	useAutomaticInjection = flag.Bool("use_automatic_injection", false, "Use automatic injection instead of kube-inject for transparent proxy injection")
 )
 
 const (

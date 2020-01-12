@@ -37,7 +37,6 @@ bin/istioctl
 # Install generated files
 install/consul/istio.yaml
 install/kubernetes/istio-demo.yaml
-install/kubernetes/istio-demo-auth.yaml
 install/kubernetes/istio-auth.yaml
 install/kubernetes/istio-auth-multicluster.yaml
 install/kubernetes/istio-mixer-with-health-check.yaml
@@ -45,6 +44,7 @@ install/kubernetes/istio-mixer-validator.yaml
 install/kubernetes/istio-citadel-plugin-certs.yaml
 install/kubernetes/istio-citadel-standalone.yaml
 install/kubernetes/istio-citadel-with-health-check.yaml
+install/kubernetes/istio-multicluster-split-horizon.yaml
 install/kubernetes/istio-one-namespace-auth.yaml
 install/kubernetes/istio-one-namespace-trust-domain.yaml
 install/kubernetes/istio-one-namespace.yaml
@@ -79,3 +79,6 @@ security/cmd/node_agent/na/pkey
 tests/e2e/local/minikube/docker-machine-driver-hyperkit
 # istioctl bash completion file
 tools/istioctl.bash
+vendor
+# Contains the built artifacts
+out/

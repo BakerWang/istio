@@ -21,10 +21,10 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 
 	"istio.io/api/policy/v1beta1"
-	istiolog "istio.io/common/pkg/log"
 	"istio.io/istio/mixer/pkg/lang/compiled"
 	"istio.io/istio/mixer/pkg/protobuf/yaml"
 	"istio.io/istio/mixer/pkg/runtime/lang"
+	istiolog "istio.io/pkg/log"
 )
 
 var (
@@ -274,7 +274,7 @@ func (c Builder) buildPrimitiveField(v interface{}, fd *descriptor.FieldDescript
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("unable to build primitve encoder for:%v %v. %v", fld.name, val, err)
+			return nil, fmt.Errorf("unable to build primitive encoder for:%v %v. %v", fld.name, val, err)
 		}
 
 		// now enc != nil

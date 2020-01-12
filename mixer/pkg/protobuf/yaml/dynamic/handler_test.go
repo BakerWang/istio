@@ -26,7 +26,6 @@ import (
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	attributeV1beta1 "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/pkg/adapter"
-	"istio.io/istio/mixer/pkg/attribute"
 	protoyaml "istio.io/istio/mixer/pkg/protobuf/yaml"
 	"istio.io/istio/mixer/template/listentry"
 	"istio.io/istio/mixer/template/metric"
@@ -34,6 +33,7 @@ import (
 	sampleapa "istio.io/istio/mixer/test/spyAdapter/template/apa"
 	checkproducer "istio.io/istio/mixer/test/spyAdapter/template/checkoutput"
 	spy "istio.io/istio/mixer/test/spybackend"
+	"istio.io/pkg/attribute"
 )
 
 func TestEncodeReportRequest(t *testing.T) {
@@ -345,20 +345,11 @@ func TestStaticBag(t *testing.T) {
 	})
 
 	t.Run(b.String()+".Names", func(t *testing.T) {
-		if v := b.Names(); reflect.DeepEqual(v, []string{"value"}) {
+		if v := b.Names(); !reflect.DeepEqual(v, []string{"attr1"}) {
 			t.Errorf("Get error got:value want:%v", v)
 		}
 	})
 	b.Done()
-}
-
-func TestBuildHandler_ConnectError(t *testing.T) {
-	/*
-		h, err := BuildHandler("spy", &attributeV1beta1.Connection{Address: ""}, false, []*adapter.DynamicInstance{}, false,)
-		if err != nil {
-			t.Fatalf("unable to build handler: %v", err)
-		}
-		h.Close()*/
 }
 
 func TestHandlerTimeout(t *testing.T) {

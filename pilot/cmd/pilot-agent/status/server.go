@@ -29,8 +29,10 @@ import (
 	"syscall"
 	"time"
 
-	"istio.io/common/pkg/log"
+	"istio.io/istio/pilot/pkg/model"
+
 	"istio.io/istio/pilot/cmd/pilot-agent/status/ready"
+	"istio.io/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -39,9 +41,11 @@ import (
 const (
 	// readyPath is for the pilot agent readiness itself.
 	readyPath = "/healthz/ready"
+	// quitPath is to notify the pilot agent to quit.
+	quitPath = "/quitquitquit"
 	// KubeAppProberEnvName is the name of the command line flag for pilot agent to pass app prober config.
 	// The json encoded string to pass app HTTP probe information from injector(istioctl or webhook).
-	// For example, --ISTIO_KUBE_APP_PROBERS='{"/app-health/httpbin/livez":{"path": "/hello", "port": 8080}.
+	// For example, ISTIO_KUBE_APP_PROBERS='{"/app-health/httpbin/livez":{"path": "/hello", "port": 8080}.
 	// indicates that httpbin container liveness prober port is 8080 and probing path is /hello.
 	// This environment variable should never be set manually.
 	KubeAppProberEnvName = "ISTIO_KUBE_APP_PROBERS"
@@ -59,12 +63,12 @@ type KubeAppProbers map[string]*corev1.HTTPGetAction
 
 // Config for the status server.
 type Config struct {
-	LocalHostAddr    string
-	StatusPort       uint16
-	AdminPort        uint16
-	ApplicationPorts []uint16
+	LocalHostAddr string
 	// KubeAppHTTPProbers is a json with Kubernetes application HTTP prober config encoded.
 	KubeAppHTTPProbers string
+	NodeType           model.NodeType
+	StatusPort         uint16
+	AdminPort          uint16
 }
 
 // Server provides an endpoint for handling status probes.
@@ -81,9 +85,9 @@ func NewServer(config Config) (*Server, error) {
 	s := &Server{
 		statusPort: config.StatusPort,
 		ready: &ready.Probe{
-			LocalHostAddr:    config.LocalHostAddr,
-			AdminPort:        config.AdminPort,
-			ApplicationPorts: config.ApplicationPorts,
+			LocalHostAddr: config.LocalHostAddr,
+			AdminPort:     config.AdminPort,
+			NodeType:      config.NodeType,
 		},
 	}
 	if config.KubeAppHTTPProbers == "" {
@@ -119,9 +123,8 @@ func (s *Server) Run(ctx context.Context) {
 
 	// Add the handler for ready probes.
 	mux.HandleFunc(readyPath, s.handleReadyProbe)
-	mux.HandleFunc("/", s.handleAppProbe)
-
-	mux.HandleFunc("/app-health", s.handleAppProbe)
+	mux.HandleFunc(quitPath, s.handleQuit)
+	mux.HandleFunc("/app-health/", s.handleAppProbe)
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", s.statusPort))
 	if err != nil {
@@ -143,11 +146,7 @@ func (s *Server) Run(ctx context.Context) {
 			log.Errora(err)
 			// If the server errors then pilot-agent can never pass readiness or liveness probes
 			// Therefore, trigger graceful termination by sending SIGTERM to the binary pid
-			p, err := os.FindProcess(os.Getpid())
-			if err != nil {
-				log.Errora(err)
-			}
-			log.Errora(p.Signal(syscall.SIGTERM))
+			notifyExit()
 		}
 	}()
 
@@ -174,6 +173,31 @@ func (s *Server) handleReadyProbe(w http.ResponseWriter, _ *http.Request) {
 		s.lastProbeSuccessful = true
 	}
 	s.mutex.Unlock()
+}
+
+func isRequestFromLocalhost(r *http.Request) bool {
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return false
+	}
+
+	userIP := net.ParseIP(ip)
+	return userIP.IsLoopback()
+}
+
+func (s *Server) handleQuit(w http.ResponseWriter, r *http.Request) {
+	if !isRequestFromLocalhost(r) {
+		http.Error(w, "Only requests from localhost are allowed", http.StatusForbidden)
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("OK"))
+	log.Infof("handling %s, notifying pilot-agent to exit", quitPath)
+	notifyExit()
 }
 
 func (s *Server) handleAppProbe(w http.ResponseWriter, req *http.Request) {
@@ -231,4 +255,15 @@ func (s *Server) handleAppProbe(w http.ResponseWriter, req *http.Request) {
 
 	// We only write the status code to the response.
 	w.WriteHeader(response.StatusCode)
+}
+
+// notifyExit sends SIGTERM to itself
+func notifyExit() {
+	p, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		log.Errora(err)
+	}
+	if err := p.Signal(syscall.SIGTERM); err != nil {
+		log.Errorf("failed to send SIGTERM to self: %v", err)
+	}
 }
