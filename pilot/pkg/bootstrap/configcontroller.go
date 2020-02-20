@@ -41,9 +41,8 @@ import (
 	configmonitor "istio.io/istio/pilot/pkg/config/monitor"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/serviceregistry/mcp"
-	"istio.io/istio/pilot/pkg/serviceregistry/synthetic/serviceentry"
 	"istio.io/istio/pkg/config/constants"
-	"istio.io/istio/pkg/config/schemas"
+	"istio.io/istio/pkg/config/schema/collections"
 	configz "istio.io/istio/pkg/mcp/configz/client"
 	"istio.io/istio/pkg/mcp/creds"
 	"istio.io/istio/pkg/mcp/monitoring"
@@ -67,7 +66,7 @@ func (s *Server) initConfigController(args *PilotArgs) error {
 			return err
 		}
 	} else if args.Config.FileDir != "" {
-		store := memory.Make(schemas.Istio)
+		store := memory.Make(collections.Pilot)
 		configController := memory.NewController(store)
 
 		err := s.makeFileMonitor(args.Config.FileDir, configController)
@@ -89,8 +88,7 @@ func (s *Server) initConfigController(args *PilotArgs) error {
 		s.ConfigStores = append(s.ConfigStores,
 			ingress.NewController(s.kubeClient, meshConfig, args.Config.ControllerOptions))
 
-		if ingressSyncer, errSyncer := ingress.NewStatusSyncer(meshConfig, s.kubeClient,
-			args.Namespace, args.Config.ControllerOptions); errSyncer != nil {
+		if ingressSyncer, errSyncer := ingress.NewStatusSyncer(meshConfig, s.kubeClient, args.Config.ControllerOptions, s.leaderElection); errSyncer != nil {
 			log.Warnf("Disabled ingress status syncer due to %v", errSyncer)
 		} else {
 			s.addStartFunc(func(stop <-chan struct{}) error {
@@ -148,7 +146,7 @@ func (s *Server) initMCPConfigController(args *PilotArgs) (err error) {
 				if srcAddress.Path == "" {
 					return fmt.Errorf("invalid fs config URL %s, contains no file path", configSource.Address)
 				}
-				store := memory.MakeWithLedger(schemas.Istio, buildLedger(args.Config))
+				store := memory.MakeWithLedger(collections.Pilot, buildLedger(args.Config))
 				configController := memory.NewController(store)
 
 				err := s.makeFileMonitor(srcAddress.Path, configController)
@@ -167,11 +165,6 @@ func (s *Server) initMCPConfigController(args *PilotArgs) (err error) {
 		}
 		conns = append(conns, conn)
 		s.mcpController(mcpOptions, conn, reporter, &clients, &configStores)
-
-		// create MCP SyntheticServiceEntryController
-		if resourceContains(configSource.SubscribedResources, meshconfig.Resource_SERVICE_REGISTRY) {
-			s.sseMCPController(args, conn, reporter, &clients, &configStores)
-		}
 	}
 
 	s.addStartFunc(func(stop <-chan struct{}) error {
@@ -207,15 +200,6 @@ func (s *Server) initMCPConfigController(args *PilotArgs) (err error) {
 
 	s.ConfigStores = append(s.ConfigStores, configStores...)
 	return nil
-}
-
-func resourceContains(resources []meshconfig.Resource, resource meshconfig.Resource) bool {
-	for _, r := range resources {
-		if r == resource {
-			return true
-		}
-	}
-	return false
 }
 
 func mcpSecurityOptions(ctx context.Context, configSource *meshconfig.ConfigSource) (grpc.DialOption, error) {
@@ -284,14 +268,15 @@ func (s *Server) mcpController(
 	clients *[]*sink.Client,
 	configStores *[]model.ConfigStoreCache) {
 	clientNodeID := ""
-	collections := make([]sink.CollectionOptions, 0, len(schemas.Istio))
-	for _, c := range schemas.Istio {
-		collections = append(collections, sink.CollectionOptions{Name: c.Collection, Incremental: false})
+	all := collections.Pilot.All()
+	cols := make([]sink.CollectionOptions, 0, len(all))
+	for _, c := range all {
+		cols = append(cols, sink.CollectionOptions{Name: c.Name().String(), Incremental: false})
 	}
 
 	mcpController := mcp.NewController(opts)
 	sinkOptions := &sink.Options{
-		CollectionOptions: collections,
+		CollectionOptions: cols,
 		Updater:           mcpController,
 		ID:                clientNodeID,
 		Reporter:          reporter,
@@ -304,59 +289,18 @@ func (s *Server) mcpController(
 	*configStores = append(*configStores, mcpController)
 }
 
-func (s *Server) sseMCPController(args *PilotArgs,
-	conn *grpc.ClientConn,
-	reporter monitoring.Reporter,
-	clients *[]*sink.Client,
-	configStores *[]model.ConfigStoreCache) {
-	clientNodeID := "SSEMCP"
-	sseOptions := &serviceentry.Options{
-		ClusterID:    s.clusterID,
-		DomainSuffix: args.Config.ControllerOptions.DomainSuffix,
-		XDSUpdater:   s.EnvoyXdsServer,
-	}
-	ctl := serviceentry.NewSyntheticServiceEntryController(sseOptions)
-	sseDiscoveryOptions := &serviceentry.DiscoveryOptions{
-		ClusterID:    s.clusterID,
-		DomainSuffix: args.Config.ControllerOptions.DomainSuffix,
-	}
-	s.sseDiscovery = serviceentry.NewDiscovery(ctl, sseDiscoveryOptions)
-	incrementalSinkOptions := &sink.Options{
-		CollectionOptions: []sink.CollectionOptions{
-			{
-				Name:        schemas.SyntheticServiceEntry.Collection,
-				Incremental: true,
-			},
-		},
-		Updater:  ctl,
-		ID:       clientNodeID,
-		Reporter: reporter,
-	}
-	incSrcClient := mcpapi.NewResourceSourceClient(conn)
-	incMcpClient := sink.NewClient(incSrcClient, incrementalSinkOptions)
-	configz.Register(incMcpClient)
-	*clients = append(*clients, incMcpClient)
-	*configStores = append(*configStores, ctl)
-}
-
 func (s *Server) makeKubeConfigController(args *PilotArgs) (model.ConfigStoreCache, error) {
-	configClient, err := controller.NewClient(args.Config.KubeConfig, "", schemas.Istio,
-		args.Config.ControllerOptions.DomainSuffix, buildLedger(args.Config))
+	configClient, err := controller.NewClient(args.Config.KubeConfig, "", collections.Pilot,
+		args.Config.ControllerOptions.DomainSuffix, buildLedger(args.Config), args.Revision)
 	if err != nil {
 		return nil, multierror.Prefix(err, "failed to open a config client.")
-	}
-
-	if !args.Config.DisableInstallCRDs {
-		if err = configClient.RegisterResources(); err != nil {
-			return nil, multierror.Prefix(err, "failed to register custom resources.")
-		}
 	}
 
 	return controller.NewController(configClient, args.Config.ControllerOptions), nil
 }
 
 func (s *Server) makeFileMonitor(fileDir string, configController model.ConfigStore) error {
-	fileSnapshot := configmonitor.NewFileSnapshot(fileDir, schemas.Istio)
+	fileSnapshot := configmonitor.NewFileSnapshot(fileDir, collections.Pilot)
 	fileMonitor := configmonitor.NewMonitor("file-monitor", configController, FilepathWalkInterval, fileSnapshot.ReadConfigFiles)
 
 	// Defer starting the file monitor until after the service is created.
@@ -380,9 +324,9 @@ func grpcDial(ctx context.Context,
 		Timeout: args.KeepaliveOptions.Timeout,
 	})
 
-	initialWindowSizeOption := grpc.WithInitialWindowSize(int32(args.MCPInitialWindowSize))
-	initialConnWindowSizeOption := grpc.WithInitialConnWindowSize(int32(args.MCPInitialConnWindowSize))
-	msgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(args.MCPMaxMessageSize))
+	initialWindowSizeOption := grpc.WithInitialWindowSize(int32(args.MCPOptions.InitialWindowSize))
+	initialConnWindowSizeOption := grpc.WithInitialConnWindowSize(int32(args.MCPOptions.InitialConnWindowSize))
+	msgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(args.MCPOptions.MaxMessageSize))
 
 	return grpc.DialContext(
 		ctx,

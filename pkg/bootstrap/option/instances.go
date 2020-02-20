@@ -216,6 +216,10 @@ func EnvoyAccessLogServiceTCPKeepalive(value *networkingAPI.ConnectionPoolSettin
 	return newTCPKeepaliveOption("envoy_accesslog_service_tcp_keepalive", value)
 }
 
+func EnvoyExtraStatTags(value []string) Instance {
+	return newStringArrayOptionOrSkipIfEmpty("extraStatTags", value)
+}
+
 func EnvoyStatsMatcherInclusionPrefix(value []string) Instance {
 	return newStringArrayOptionOrSkipIfEmpty("inclusionPrefix", value)
 }
@@ -234,4 +238,8 @@ func SDSUDSPath(value string) Instance {
 
 func SDSTokenPath(value string) Instance {
 	return newOption("sds_token_path", value)
+}
+
+func PilotCertProvider(value string) Instance {
+	return newOption("pilot_cert_provider", value)
 }

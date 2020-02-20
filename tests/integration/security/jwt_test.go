@@ -15,8 +15,7 @@
 package security
 
 import (
-	"fmt"
-	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -332,8 +331,8 @@ func TestAuthnJwt(t *testing.T) {
 
 // TestRequestAuthentication tests beta authn policy for jwt.
 func TestRequestAuthentication(t *testing.T) {
-	testIssuer1Token := jwt.TokenIssuer1
-
+	payload1 := strings.Split(jwt.TokenIssuer1, ".")[1]
+	payload2 := strings.Split(jwt.TokenIssuer2, ".")[1]
 	framework.NewTest(t).
 		RequiresEnvironment(environment.Kube).
 		Run(func(ctx framework.TestContext) {
@@ -347,6 +346,7 @@ func TestRequestAuthentication(t *testing.T) {
 				"Namespace": ns.Name(),
 			}
 			jwtPolicies := tmpl.EvaluateAllOrFail(t, namespaceTmpl,
+				file.AsStringOrFail(t, "testdata/requestauthn/a-authn.yaml.tmpl"),
 				file.AsStringOrFail(t, "testdata/requestauthn/b-authn-authz.yaml.tmpl"),
 				file.AsStringOrFail(t, "testdata/requestauthn/c-authn.yaml.tmpl"),
 				file.AsStringOrFail(t, "testdata/requestauthn/e-authn.yaml.tmpl"),
@@ -373,13 +373,33 @@ func TestRequestAuthentication(t *testing.T) {
 							PortName: "http",
 							Scheme:   scheme.HTTP,
 							Headers: map[string][]string{
-								authHeaderKey: {"Bearer " + testIssuer1Token},
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer1},
 							},
 						},
 					},
 					ExpectResponseCode: response.StatusCodeOK,
 					ExpectHeaders: map[string]string{
-						authHeaderKey: "",
+						authHeaderKey:    "",
+						"X-Test-Payload": payload1,
+					},
+				},
+				{
+					Name: "valid-token-2-noauthz",
+					Request: connection.Checker{
+						From: a,
+						Options: echo.CallOptions{
+							Target:   c,
+							PortName: "http",
+							Scheme:   scheme.HTTP,
+							Headers: map[string][]string{
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer2},
+							},
+						},
+					},
+					ExpectResponseCode: response.StatusCodeOK,
+					ExpectHeaders: map[string]string{
+						authHeaderKey:    "",
+						"X-Test-Payload": payload2,
 					},
 				},
 				{
@@ -395,10 +415,7 @@ func TestRequestAuthentication(t *testing.T) {
 							},
 						},
 					},
-					ExpectResponseCode: response.StatusCodeOK,
-					ExpectHeaders: map[string]string{
-						authHeaderKey: "Bearer " + jwt.TokenExpired,
-					},
+					ExpectResponseCode: response.StatusUnauthorized,
 				},
 				{
 					Name: "no-token-noauthz",
@@ -422,7 +439,7 @@ func TestRequestAuthentication(t *testing.T) {
 							PortName: "http",
 							Scheme:   scheme.HTTP,
 							Headers: map[string][]string{
-								authHeaderKey: {"Bearer " + testIssuer1Token},
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer1},
 							},
 						},
 					},
@@ -444,7 +461,7 @@ func TestRequestAuthentication(t *testing.T) {
 							},
 						},
 					},
-					ExpectResponseCode: response.StatusCodeForbidden,
+					ExpectResponseCode: response.StatusUnauthorized,
 				},
 				{
 					Name: "no-token",
@@ -479,15 +496,60 @@ func TestRequestAuthentication(t *testing.T) {
 							PortName: "http",
 							Scheme:   scheme.HTTP,
 							Headers: map[string][]string{
-								authHeaderKey: {"Bearer " + testIssuer1Token},
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer1},
 							},
 						},
 					},
 					ExpectResponseCode: response.StatusCodeOK,
 					ExpectHeaders: map[string]string{
-						authHeaderKey:    "Bearer " + testIssuer1Token,
-						"X-Test-Payload": "eyJleHAiOjQ3MTU3ODI3MjIsImdyb3VwcyI6WyJncm91cC0xIl0sImlhdCI6MTU2MjE4MjcyMiwiaXNzIjoidGVzdC1pc3N1ZXItMUBpc3Rpby5pbyIsInN1YiI6InN1Yi0xIn0", // nolint: lll
+						authHeaderKey:    "Bearer " + jwt.TokenIssuer1,
+						"X-Test-Payload": payload1,
 					},
+				},
+				{
+					Name: "invalid aud",
+					Request: connection.Checker{
+						From: b,
+						Options: echo.CallOptions{
+							Target:   a,
+							PortName: "http",
+							Scheme:   scheme.HTTP,
+							Headers: map[string][]string{
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer1},
+							},
+						},
+					},
+					ExpectResponseCode: response.StatusCodeForbidden,
+				},
+				{
+					Name: "valid aud",
+					Request: connection.Checker{
+						From: b,
+						Options: echo.CallOptions{
+							Target:   a,
+							PortName: "http",
+							Scheme:   scheme.HTTP,
+							Headers: map[string][]string{
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer1WithAud},
+							},
+						},
+					},
+					ExpectResponseCode: response.StatusCodeOK,
+				},
+				{
+					Name: "verify policies are combined",
+					Request: connection.Checker{
+						From: b,
+						Options: echo.CallOptions{
+							Target:   a,
+							PortName: "http",
+							Scheme:   scheme.HTTP,
+							Headers: map[string][]string{
+								authHeaderKey: {"Bearer " + jwt.TokenIssuer2},
+							},
+						},
+					},
+					ExpectResponseCode: response.StatusCodeOK,
 				},
 			}
 			for _, c := range testCases {
@@ -557,7 +619,7 @@ func TestIngressRequestAuthentication(t *testing.T) {
 							},
 						},
 					},
-					ExpectResponseCode: response.StatusCodeOK,
+					ExpectResponseCode: response.StatusUnauthorized,
 				},
 				{
 					Name: "in-mesh-without-token",
@@ -612,7 +674,7 @@ func TestIngressRequestAuthentication(t *testing.T) {
 					Host:               "example.com",
 					Path:               "/",
 					Token:              jwt.TokenExpired,
-					ExpectResponseCode: 403,
+					ExpectResponseCode: 401,
 				},
 				{
 					Name:               "allow with sub-1 token on any.com",
@@ -652,33 +714,10 @@ func TestIngressRequestAuthentication(t *testing.T) {
 			for _, c := range ingTestCases {
 				t.Run(c.Name, func(t *testing.T) {
 					retry.UntilSuccessOrFail(t, func() error {
-						return checkIngress(ingr, c.Host, c.Path, c.Token, c.ExpectResponseCode)
+						return authn.CheckIngress(ingr, c.Host, c.Path, c.Token, c.ExpectResponseCode)
 					},
 						retry.Delay(250*time.Millisecond), retry.Timeout(30*time.Second))
 				})
 			}
 		})
-}
-
-func checkIngress(ingr ingress.Instance, host string, path string, token string, expectResponseCode int) error {
-	endpointAddress := ingr.HTTPAddress()
-	opts := ingress.CallOptions{
-		Host:     host,
-		Path:     path,
-		CallType: ingress.PlainText,
-		Address:  endpointAddress,
-	}
-	if len(token) != 0 {
-		opts.Headers = http.Header{
-			"Authorization": []string{
-				fmt.Sprintf("Bearer %s", token),
-			},
-		}
-	}
-	response, err := ingr.Call(opts)
-
-	if response.Code != expectResponseCode {
-		return fmt.Errorf("got response code %d, err %s", response.Code, err)
-	}
-	return nil
 }

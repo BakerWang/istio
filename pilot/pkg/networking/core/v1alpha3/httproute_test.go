@@ -33,7 +33,7 @@ import (
 	"istio.io/istio/pilot/pkg/serviceregistry"
 	"istio.io/istio/pkg/config/host"
 	"istio.io/istio/pkg/config/protocol"
-	"istio.io/istio/pkg/config/schemas"
+	"istio.io/istio/pkg/config/schema/collections"
 	"istio.io/istio/pkg/config/visibility"
 )
 
@@ -389,8 +389,8 @@ func TestSidecarOutboundHTTPRouteConfig(t *testing.T) {
 	}
 	virtualService1 := model.Config{
 		ConfigMeta: model.ConfigMeta{
-			Type:      schemas.VirtualService.Type,
-			Version:   schemas.VirtualService.Version,
+			Type:      collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind(),
+			Version:   collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Version(),
 			Name:      "acme2-v1",
 			Namespace: "not-default",
 		},
@@ -398,8 +398,8 @@ func TestSidecarOutboundHTTPRouteConfig(t *testing.T) {
 	}
 	virtualService2 := model.Config{
 		ConfigMeta: model.ConfigMeta{
-			Type:      schemas.VirtualService.Type,
-			Version:   schemas.VirtualService.Version,
+			Type:      collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind(),
+			Version:   collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Version(),
 			Name:      "acme-v2",
 			Namespace: "not-default",
 		},
@@ -407,8 +407,8 @@ func TestSidecarOutboundHTTPRouteConfig(t *testing.T) {
 	}
 	virtualService3 := model.Config{
 		ConfigMeta: model.ConfigMeta{
-			Type:      schemas.VirtualService.Type,
-			Version:   schemas.VirtualService.Version,
+			Type:      collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind(),
+			Version:   collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Version(),
 			Name:      "acme-v3",
 			Namespace: "not-default",
 		},
@@ -416,8 +416,8 @@ func TestSidecarOutboundHTTPRouteConfig(t *testing.T) {
 	}
 	virtualService4 := model.Config{
 		ConfigMeta: model.ConfigMeta{
-			Type:      schemas.VirtualService.Type,
-			Version:   schemas.VirtualService.Version,
+			Type:      collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind(),
+			Version:   collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Version(),
 			Name:      "acme-v4",
 			Namespace: "not-default",
 		},
@@ -425,8 +425,8 @@ func TestSidecarOutboundHTTPRouteConfig(t *testing.T) {
 	}
 	virtualService5 := model.Config{
 		ConfigMeta: model.ConfigMeta{
-			Type:      schemas.VirtualService.Type,
-			Version:   schemas.VirtualService.Version,
+			Type:      collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Kind(),
+			Version:   collections.IstioNetworkingV1Alpha3Virtualservices.Resource().Version(),
 			Name:      "acme-v3",
 			Namespace: "not-default",
 		},
@@ -828,6 +828,10 @@ func testSidecarRDSVHosts(t *testing.T, services []*model.Service,
 			if !expectedHosts[vhost.Name][domain] {
 				t.Fatalf("unexpected vhost domain %s in vhost %s, for route %s", domain, vhost.Name, routeName)
 			}
+		}
+
+		if !vhost.GetIncludeRequestAttemptCount() {
+			t.Fatal("Expected that include request attempt count is set to true, but set to false")
 		}
 	}
 	if (expectedNumberOfRoutes >= 0) && (numberOfRoutes != expectedNumberOfRoutes) {

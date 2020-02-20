@@ -36,6 +36,7 @@ import (
 
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pkg/jwt"
 	"istio.io/pkg/collateral"
 	"istio.io/pkg/env"
 	"istio.io/pkg/log"
@@ -46,6 +47,7 @@ import (
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/proxy"
 	envoyDiscovery "istio.io/istio/pilot/pkg/proxy/envoy"
+	securityModel "istio.io/istio/pilot/pkg/security/model"
 	"istio.io/istio/pilot/pkg/serviceregistry"
 	"istio.io/istio/pkg/bootstrap/option"
 	"istio.io/istio/pkg/cmd"
@@ -59,7 +61,7 @@ import (
 )
 
 const (
-	trustworthyJWTPath = "/var/run/secrets/tokens/istio-token"
+	trustworthyJWTPath = "./var/run/secrets/tokens/istio-token"
 	localHostIPv4      = "127.0.0.1"
 	localHostIPv6      = "[::1]"
 )
@@ -129,6 +131,13 @@ var (
 		"number of attributes for stackdriver")
 	stackdriverTracingMaxNumberOfMessageEvents = env.RegisterIntVar("STACKDRIVER_TRACING_MAX_NUMBER_OF_MESSAGE_EVENTS", 200, "Sets the "+
 		"max number of message events for stackdriver")
+	pilotCertProvider = env.RegisterStringVar("PILOT_CERT_PROVIDER", "citadel",
+		"the provider of Pilot DNS certificate.").Get()
+	jwtPolicy = env.RegisterStringVar("JWT_POLICY", jwt.JWTPolicyThirdPartyJWT,
+		"The JWT validation policy.")
+	outputKeyCertToDir = env.RegisterStringVar("OUTPUT_KEY_CERT_TO_DIRECTORY", "",
+		"The output directory for the key and certificate. If empty, no output of key and certificate.").Get()
+	meshConfig = env.RegisterStringVar("MESH_CONFIG", "", "The mesh configuration").Get()
 
 	sdsUdsWaitTimeout = time.Minute
 
@@ -215,7 +224,14 @@ var (
 				tlsClientCertChain, tlsClientKey, tlsClientRootCert,
 			}
 
+			meshConfig, err := getMeshConfig()
+			if err != nil {
+				return err
+			}
 			proxyConfig := mesh.DefaultProxyConfig()
+			if meshConfig.DefaultConfig != nil {
+				proxyConfig = *meshConfig.DefaultConfig
+			}
 
 			// set all flags
 			proxyConfig.CustomConfigFile = customConfigFile
@@ -357,12 +373,24 @@ var (
 			// Legacy - so pilot-agent can be used with citadel node agent.
 			// Main will be replaced by istio-agent when we clean up - this code can stay here and be removed with the rest.
 			sdsUDSPath := sdsUdsPathVar.Get()
-			nodeAgentSDSEnabled, sdsTokenPath := detectSds(controlPlaneBootstrap, sdsUDSPath, trustworthyJWTPath)
+			var jwtPath string
+			if jwtPolicy.Get() == jwt.JWTPolicyThirdPartyJWT {
+				log.Info("JWT policy is third-party-jwt")
+				jwtPath = trustworthyJWTPath
+			} else if jwtPolicy.Get() == jwt.JWTPolicyFirstPartyJWT {
+				log.Info("JWT policy is first-party-jwt")
+				jwtPath = securityModel.K8sSAJwtFileName
+			} else {
+				err := fmt.Errorf("invalid JWT policy %v", jwtPolicy.Get())
+				log.Errorf("%v", err)
+				return err
+			}
+			nodeAgentSDSEnabled, sdsTokenPath := detectSds(controlPlaneBootstrap, sdsUDSPath, jwtPath)
 
 			if !nodeAgentSDSEnabled { // Not using citadel agent - this is either Pilot or Istiod.
 
 				// Istiod and new SDS-only mode doesn't use sdsUdsPathVar - sdsEnabled will be false.
-				sa := istio_agent.NewSDSAgent(discoveryAddress, controlPlaneAuthEnabled)
+				sa := istio_agent.NewSDSAgent(discoveryAddress, controlPlaneAuthEnabled, pilotCertProvider, jwtPath, outputKeyCertToDir)
 
 				if sa.JWTPath != "" {
 					// If user injected a JWT token for SDS - use SDS.
@@ -524,14 +552,16 @@ var (
 				PodIP:               podIP,
 				SDSUDSPath:          sdsUDSPath,
 				SDSTokenPath:        sdsTokenPath,
+				STSPort:             stsPort,
 				ControlPlaneAuth:    controlPlaneAuthEnabled,
 				DisableReportCalls:  disableInternalTelemetry,
 				OutlierLogPath:      outlierLogPath,
+				PilotCertProvider:   pilotCertProvider,
 			})
 
 			agent := envoy.NewAgent(envoyProxy, features.TerminationDrainDuration())
 
-			if nodeAgentSDSEnabled && role.Type == model.SidecarProxy {
+			if nodeAgentSDSEnabled {
 				tlsCertsToWatch = []string{}
 			}
 
@@ -546,6 +576,18 @@ var (
 		},
 	}
 )
+
+func getMeshConfig() (meshconfig.MeshConfig, error) {
+	defaultConfig := mesh.DefaultMeshConfig()
+	if meshConfig != "" {
+		mc, err := mesh.ApplyMeshConfigJSON(meshConfig, defaultConfig)
+		if err != nil || mc == nil {
+			return meshconfig.MeshConfig{}, fmt.Errorf("failed to unmarshal mesh config config: %v", err)
+		}
+		return *mc, nil
+	}
+	return defaultConfig, nil
+}
 
 // dedupes the string array and also ignores the empty string.
 func dedupeStrings(in []string) []string {
@@ -616,7 +658,7 @@ func getDNSDomain(podNamespace, domain string) string {
 }
 
 // detectSds checks if the SDS address (when it is UDS) and JWT paths are present.
-func detectSds(controlPlaneBootstrap bool, sdsAddress, trustworthyJWTPath string) (bool, string) {
+func detectSds(controlPlaneBootstrap bool, sdsAddress, jwtPath string) (bool, string) {
 	if !sdsEnabledVar.Get() {
 		return false, ""
 	}
@@ -625,7 +667,7 @@ func detectSds(controlPlaneBootstrap bool, sdsAddress, trustworthyJWTPath string
 		return false, ""
 	}
 
-	if _, err := os.Stat(trustworthyJWTPath); err != nil {
+	if _, err := os.Stat(jwtPath); err != nil {
 		return false, ""
 	}
 
@@ -638,7 +680,7 @@ func detectSds(controlPlaneBootstrap bool, sdsAddress, trustworthyJWTPath string
 			return false, ""
 		}
 	} else {
-		return true, trustworthyJWTPath
+		return true, jwtPath
 	}
 
 	if !controlPlaneBootstrap {
@@ -648,7 +690,7 @@ func detectSds(controlPlaneBootstrap bool, sdsAddress, trustworthyJWTPath string
 			return false, ""
 		}
 
-		return true, trustworthyJWTPath
+		return true, jwtPath
 	}
 
 	// controlplane components like pilot/mixer/galley have sidecar
@@ -658,7 +700,7 @@ func detectSds(controlPlaneBootstrap bool, sdsAddress, trustworthyJWTPath string
 		return false, ""
 	}
 
-	return true, trustworthyJWTPath
+	return true, jwtPath
 }
 
 func timeDuration(dur *types.Duration) time.Duration {
@@ -695,8 +737,8 @@ func appendTLSCerts(rs *meshconfig.RemoteService) {
 func init() {
 	proxyCmd.PersistentFlags().StringVar((*string)(&registryID), "serviceregistry",
 		string(serviceregistry.Kubernetes),
-		fmt.Sprintf("Select the platform for service registry, options are {%s, %s, %s, %s}",
-			serviceregistry.Kubernetes, serviceregistry.Consul, serviceregistry.MCP, serviceregistry.Mock))
+		fmt.Sprintf("Select the platform for service registry, options are {%s, %s, %s}",
+			serviceregistry.Kubernetes, serviceregistry.Consul, serviceregistry.Mock))
 	proxyCmd.PersistentFlags().StringVar(&proxyIP, "ip", "",
 		"Proxy IP address. If not provided uses ${INSTANCE_IP} environment variable.")
 	proxyCmd.PersistentFlags().StringVar(&role.ID, "id", "",
@@ -714,7 +756,7 @@ func init() {
 		"HTTP Port on which to serve pilot agent status. If zero, agent status will not be provided.")
 	proxyCmd.PersistentFlags().IntVar(&stsPort, "stsPort", 0,
 		"HTTP Port on which to serve Security Token Service (STS). If zero, STS service will not be provided.")
-	proxyCmd.PersistentFlags().StringVar(&tokenManagerPlugin, "tokenManagerPlugin", "",
+	proxyCmd.PersistentFlags().StringVar(&tokenManagerPlugin, "tokenManagerPlugin", tokenmanager.GoogleTokenExchange,
 		"Token provider specific plugin name.")
 	// Flags for proxy configuration
 	values := mesh.DefaultProxyConfig()

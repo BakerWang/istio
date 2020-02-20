@@ -23,7 +23,7 @@ import (
 )
 
 // Stats in Envoy proxy.
-var expectedStats = map[string]int{
+var expectedStats = map[string]uint64{
 	// Policy check stats
 	"http_mixer_filter.total_check_calls":             20,
 	"http_mixer_filter.total_check_cache_hits":        19,
@@ -45,6 +45,7 @@ var expectedStats = map[string]int{
 }
 
 func TestQuotaCache(t *testing.T) {
+	t.Skip("https://github.com/istio/istio/issues/20092")
 	// Only check cache is enabled, quota cache is enabled.
 	s := env.NewTestSetup(env.QuotaCacheTest, t)
 	env.SetStatsUpdateInterval(s.MfConfig(), 1)
